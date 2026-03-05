@@ -571,7 +571,19 @@ function renderTabs() {
     const el=document.createElement('div');
     el.className='tab'+(t.id===activeId?' active':'')+(t.incog?' itab':'');
     el.onclick=e=>{if(!e.target.classList.contains('tab-x'))activate(t.id);};
-    el.innerHTML=`<div class="tab-favicon">${t.loading?'⟳':'🌿'}</div><div class="tab-title">${esc(t.title)}</div><button class="tab-x" onclick="closeTab('${t.id}')">×</button>`;
+    const favicon=document.createElement('div');
+    favicon.className='tab-favicon';
+    favicon.textContent=t.loading?'⟳':'🌿';
+    const title=document.createElement('div');
+    title.className='tab-title';
+    title.textContent=t.title;
+    const xbtn=document.createElement('button');
+    xbtn.className='tab-x';
+    xbtn.textContent='×';
+    xbtn.onclick=e=>{e.stopPropagation();closeTab(t.id);};
+    el.appendChild(favicon);
+    el.appendChild(title);
+    el.appendChild(xbtn);
     list.appendChild(el);
   });
 }
@@ -733,12 +745,16 @@ async function loadBMPanel(){
   const body=$('pb-body'); body.innerHTML='<div class="pempty">Loading…</div>';
   const{data}=await sb.from('bayou_bookmarks').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
   if(!data||!data.length){body.innerHTML='<div class="pempty">No bookmarks yet.<br>Click ★ to save a page.</div>';return;}
-  body.innerHTML=data.map(b=>`
-    <div class="pitem" onclick="navigate('${esc(b.url)}');closePanel()">
-      <div class="pitem-icon">⭐</div>
-      <div class="pitem-info"><div class="pitem-title">${esc(b.title||b.url)}</div><div class="pitem-sub">${esc(shortUrl(b.url))}</div></div>
-      <button class="pitem-del" onclick="event.stopPropagation();delBM('${b.id}','${esc(b.url)}',this.closest('.pitem'))">×</button>
-    </div>`).join('');
+  const bmFrag=document.createDocumentFragment();
+  data.forEach(b=>{
+    const el=document.createElement('div');
+    el.className='pitem';
+    el.innerHTML=`<div class="pitem-icon">⭐</div><div class="pitem-info"><div class="pitem-title">${esc(b.title||b.url)}</div><div class="pitem-sub">${esc(shortUrl(b.url))}</div></div><button class="pitem-del">×</button>`;
+    el.querySelector('.pitem-del').onclick=e=>{e.stopPropagation();delBM(b.id,b.url,el);};
+    el.onclick=()=>{navigate(b.url);closePanel();};
+    bmFrag.appendChild(el);
+  });
+  body.innerHTML=''; body.appendChild(bmFrag);
 }
 
 async function delBM(id,url,el){
@@ -755,14 +771,21 @@ async function loadHistPanel(){
   if(!data||!data.length){body.innerHTML='<div class="pempty">No history yet.</div>';return;}
   const groups={};
   data.forEach(h=>{const d=new Date(h.visited_at),lbl=isToday(d)?'Today':isYest(d)?'Yesterday':d.toLocaleDateString();if(!groups[lbl])groups[lbl]=[];groups[lbl].push(h);});
-  body.innerHTML=Object.entries(groups).map(([lbl,items])=>`
-    <div class="psec">${esc(lbl)}</div>
-    ${items.map(h=>`
-      <div class="pitem" onclick="navigate('${esc(h.url)}');closePanel()">
-        <div class="pitem-icon">🌐</div>
-        <div class="pitem-info"><div class="pitem-title">${esc(h.title||h.url)}</div><div class="pitem-sub">${esc(shortUrl(h.url))}</div></div>
-        <button class="pitem-del" onclick="event.stopPropagation();delHist('${h.id}',this.closest('.pitem'))">×</button>
-      </div>`).join('')}`).join('');
+  const histFrag=document.createDocumentFragment();
+  Object.entries(groups).forEach(([lbl,items])=>{
+    const sec=document.createElement('div');
+    sec.className='psec'; sec.textContent=lbl;
+    histFrag.appendChild(sec);
+    items.forEach(h=>{
+      const el=document.createElement('div');
+      el.className='pitem';
+      el.innerHTML=`<div class="pitem-icon">🌐</div><div class="pitem-info"><div class="pitem-title">${esc(h.title||h.url)}</div><div class="pitem-sub">${esc(shortUrl(h.url))}</div></div><button class="pitem-del">×</button>`;
+      el.querySelector('.pitem-del').onclick=e=>{e.stopPropagation();delHist(h.id,el);};
+      el.onclick=()=>{navigate(h.url);closePanel();};
+      histFrag.appendChild(el);
+    });
+  });
+  body.innerHTML=''; body.appendChild(histFrag);
 }
 
 async function delHist(id,el){await sb.from('bayou_history').delete().eq('id',id).eq('user_id',currentUser.id);el?.remove();}
@@ -774,16 +797,27 @@ async function loadPwPanel(){
   const body=$('pp-body'); body.innerHTML='<div class="pempty">Loading…</div>';
   const{data}=await sb.from('bayou_passwords').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
   if(!data||!data.length){body.innerHTML='<div class="pempty">No saved passwords.</div>';return;}
-  body.innerHTML=data.map(p=>`
-    <div class="pitem" style="flex-direction:column;align-items:flex-start;gap:4px;cursor:default">
-      <div style="display:flex;align-items:center;gap:9px;width:100%">
-        <div class="pitem-icon">🔑</div>
-        <div class="pitem-info"><div class="pitem-title">${esc(p.site)}</div><div class="pitem-sub">${esc(p.username)}</div></div>
-        <button class="pw-eye" onclick="revealPw('${p.id}')">👁</button>
-        <button class="pitem-del" onclick="delPw('${p.id}',this.closest('.pitem'))">×</button>
-      </div>
-      <div id="pv-${p.id}" class="pw-hide" data-pw="${esc(p.password)}">••••••••</div>
-    </div>`).join('');
+  const pwFrag=document.createDocumentFragment();
+  data.forEach(p=>{
+    const el=document.createElement('div');
+    el.className='pitem';
+    el.style.cssText='flex-direction:column;align-items:flex-start;gap:4px;cursor:default';
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:9px;width:100%';
+    row.innerHTML=`<div class="pitem-icon">🔑</div><div class="pitem-info"><div class="pitem-title">${esc(p.site)}</div><div class="pitem-sub">${esc(p.username)}</div></div>`;
+    const eyeBtn=document.createElement('button');
+    eyeBtn.className='pw-eye'; eyeBtn.textContent='👁';
+    const delBtn=document.createElement('button');
+    delBtn.className='pitem-del'; delBtn.textContent='×';
+    const pwVal=document.createElement('div');
+    pwVal.className='pw-hide'; pwVal.dataset.pw=p.password; pwVal.textContent='••••••••';
+    eyeBtn.onclick=()=>{if(pwVal.classList.contains('pw-hide')){pwVal.textContent=pwVal.dataset.pw;pwVal.className='pw-show';}else{pwVal.textContent='••••••••';pwVal.className='pw-hide';}};
+    delBtn.onclick=()=>delPw(p.id,el);
+    row.appendChild(eyeBtn); row.appendChild(delBtn);
+    el.appendChild(row); el.appendChild(pwVal);
+    pwFrag.appendChild(el);
+  });
+  body.innerHTML=''; body.appendChild(pwFrag);
 }
 
 function revealPw(id){const el=$('pv-'+id);if(!el)return;if(el.classList.contains('pw-hide')){el.textContent=el.dataset.pw;el.className='pw-show';}else{el.textContent='••••••••';el.className='pw-hide';}}
