@@ -676,24 +676,29 @@ function goHome(){const t=tabs.find(x=>x.id===activeId);if(!t)return;t.url='';t.
 function reloadTab(){const t=tabs.find(x=>x.id===activeId);if(!t)return;t.url?navigate(t.url,activeId,true):goHome();}
 
 function renderNewTab(t) {
+  const tid = t.id;
   t.frame.innerHTML=`
     <div class="newtab">
       <div class="nt-logo">Bayou</div>
-      ${t.incog?'<div class="nt-incog">👤 Incognito — history not saved</div>':''}
+      ${t.incog?'<div class="nt-incog">&#128100; Incognito &mdash; history not saved</div>':''}
       <div class="nt-search">
         <div class="nt-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
-        <input class="nt-input" placeholder="Search or enter a URL…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')navigate(this.value,'${t.id}')">
+        <input class="nt-input" id="nt-input-${tid}" placeholder="Search or enter a URL&hellip;" autocomplete="off" spellcheck="false">
       </div>
-      <div class="nt-shortcuts">
-        <button class="sc" onclick="navigate('https://google.com','${t.id}')"><span class="sc-icon">🔍</span><span class="sc-name">Google</span></button>
-        <button class="sc" onclick="navigate('https://youtube.com','${t.id}')"><span class="sc-icon">▶️</span><span class="sc-name">YouTube</span></button>
-        <button class="sc" onclick="navigate('https://github.com','${t.id}')"><span class="sc-icon">🐙</span><span class="sc-name">GitHub</span></button>
-        <button class="sc" onclick="navigate('https://reddit.com','${t.id}')"><span class="sc-icon">🤖</span><span class="sc-name">Reddit</span></button>
-        <button class="sc" onclick="navigate('https://wikipedia.org','${t.id}')"><span class="sc-icon">📖</span><span class="sc-name">Wikipedia</span></button>
-        <button class="sc" onclick="navigate('https://partials-gh.github.io/bubble','${t.id}')"><span class="sc-icon">💬</span><span class="sc-name">Bubble</span></button>
+      <div class="nt-shortcuts" id="nt-sc-${tid}">
+        <button class="sc" data-url="https://google.com"><span class="sc-icon">&#128269;</span><span class="sc-name">Google</span></button>
+        <button class="sc" data-url="https://invidious.io"><span class="sc-icon">&#9654;&#65039;</span><span class="sc-name">YouTube</span></button>
+        <button class="sc" data-url="https://github.com"><span class="sc-icon">&#128025;</span><span class="sc-name">GitHub</span></button>
+        <button class="sc" data-url="https://old.reddit.com"><span class="sc-icon">&#129302;</span><span class="sc-name">Reddit</span></button>
+        <button class="sc" data-url="https://wikipedia.org"><span class="sc-icon">&#128218;</span><span class="sc-name">Wikipedia</span></button>
+        <button class="sc" data-url="https://partials-gh.github.io/bubble"><span class="sc-icon">&#128172;</span><span class="sc-name">Bubble</span></button>
       </div>
     </div>`;
-  setTimeout(()=>t.frame.querySelector('.nt-input')?.focus(),100);
+  const inp = t.frame.querySelector('#nt-input-'+tid);
+  if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') navigate(e.target.value, tid); });
+  const scs = t.frame.querySelectorAll('#nt-sc-'+tid+' .sc');
+  scs.forEach(btn=>btn.addEventListener('click', ()=>navigate(btn.dataset.url, tid)));
+  setTimeout(()=>inp?.focus(), 100);
 }
 
 function goBack(){try{$('if-'+activeId)?.contentWindow?.history?.back();}catch(e){}}
