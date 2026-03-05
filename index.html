@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bayou</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -22,6 +23,77 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 *{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+
+
+/* RIVERBANK */
+#riverbank{position:fixed;inset:0;background:var(--bg);z-index:8000;display:none;flex-direction:column}
+#riverbank.open{display:flex}
+.rb-hd{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0}
+.rb-logo{font-family:var(--serif);font-size:20px;font-style:italic;color:var(--accent);letter-spacing:-0.5px}
+.rb-tabs{display:flex;gap:4px;flex:1}
+.rb-tab{padding:6px 14px;border-radius:7px;border:none;background:none;color:var(--text-muted);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all 0.12s}
+.rb-tab:hover{background:var(--surface2);color:var(--text)}
+.rb-tab.active{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(163,196,106,0.2)}
+.rb-close{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:all 0.12s}
+.rb-close:hover{color:var(--text);background:var(--surface2)}
+.rb-body{flex:1;overflow-y:auto;padding:28px}
+.rb-section{display:none}
+.rb-section.active{display:block}
+.rb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:20px}
+.rb-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;transition:all 0.15s;cursor:default}
+.rb-card:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.rb-card-icon{width:44px;height:44px;border-radius:10px;background:var(--accent-dim);border:1px solid rgba(163,196,106,0.2);display:grid;place-items:center;font-size:18px;margin-bottom:12px;color:var(--accent)}
+.rb-card-name{font-size:14px;color:var(--text);margin-bottom:4px;font-family:var(--serif)}
+.rb-card-desc{font-size:11px;color:var(--text-muted);line-height:1.6;margin-bottom:14px}
+.rb-card-author{font-size:10px;color:var(--text-dim);margin-bottom:12px}
+.rb-card-footer{display:flex;align-items:center;justify-content:space-between}
+.rb-badge{font-size:9px;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px}
+.rb-badge.ext{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(163,196,106,0.2)}
+.rb-badge.theme{background:#1a1424;color:var(--incog);border:1px solid var(--incog-border)}
+.rb-badge.pending{background:rgba(224,112,112,0.08);color:var(--danger);border:1px solid rgba(224,112,112,0.2)}
+.rb-badge.approved{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(163,196,106,0.2)}
+.rb-btn{padding:6px 14px;border-radius:7px;border:none;font-family:var(--mono);font-size:11px;cursor:pointer;transition:all 0.12s}
+.rb-btn.primary{background:var(--accent);color:#0a1205}
+.rb-btn.primary:hover{filter:brightness(1.1)}
+.rb-btn.secondary{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)}
+.rb-btn.secondary:hover{color:var(--text)}
+.rb-btn.danger{background:rgba(224,112,112,0.1);color:var(--danger);border:1px solid rgba(224,112,112,0.2)}
+.rb-btn.danger:hover{background:rgba(224,112,112,0.2)}
+.rb-btn:disabled{opacity:0.4;cursor:not-allowed}
+.rb-installed{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--accent)}
+.rb-section-title{font-family:var(--serif);font-size:22px;letter-spacing:-0.5px;margin-bottom:6px}
+.rb-section-sub{font-size:12px;color:var(--text-muted);margin-bottom:4px}
+.rb-toggle{width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0}
+.rb-toggle.on{background:var(--accent)}
+.rb-toggle.off{background:var(--border)}
+.rb-toggle::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:3px;transition:left 0.2s}
+.rb-toggle.on::after{left:19px}
+.rb-toggle.off::after{left:3px}
+/* Developer form */
+.rb-form{max-width:600px}
+.rb-form .form-field{margin-bottom:18px}
+.rb-form textarea{width:100%;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;resize:vertical;min-height:80px;transition:border-color 0.15s}
+.rb-form textarea:focus{border-color:var(--accent)}
+.rb-form select{width:100%;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none}
+/* Ext buttons in address bar */
+.ext-btn{height:26px;padding:0 8px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;font-size:11px;display:flex;align-items:center;gap:4px;transition:all 0.12s;flex-shrink:0}
+.ext-btn:hover{background:var(--surface2);color:var(--text)}
+/* Dev forms panel */
+.dev-form-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.dev-form-card h3{font-family:var(--serif);font-size:16px;margin-bottom:8px}
+.dev-form-row{display:flex;gap:8px;margin-bottom:6px;font-size:11px;color:var(--text-muted)}
+.dev-form-row strong{color:var(--text)}
+.dev-form-actions{display:flex;gap:8px;margin-top:12px}
+
+/* CONTEXT MENU */
+#ctx-menu{position:fixed;z-index:99999;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:5px;min-width:180px;box-shadow:0 12px 40px rgba(0,0,0,0.7);display:none;animation:ddIn 0.12s ease}
+#ctx-menu.on{display:block}
+.ctx-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:7px;font-size:12px;color:var(--text-muted);cursor:pointer;border:none;background:none;width:100%;font-family:var(--mono);text-align:left;transition:all 0.1s}
+.ctx-item:hover{background:var(--surface3);color:var(--text)}
+.ctx-item i{width:14px;text-align:center;font-size:12px;color:var(--text-dim)}
+.ctx-item:hover i{color:var(--accent)}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0}
 
 /* AUTH */
 #auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;background-image:linear-gradient(rgba(163,196,106,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(163,196,106,0.03) 1px,transparent 1px);background-size:32px 32px}
@@ -216,7 +288,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 <!-- SETUP -->
 <div id="setup-screen">
   <div class="setup-card">
-    <h2>⚠ Database Setup Required</h2>
+    <h2><i class="fa-solid fa-triangle-exclamation" style="color:var(--accent);margin-right:8px"></i>Database Setup Required</h2>
     <p>Run this SQL in your <a href="https://supabase.com/dashboard" target="_blank" style="color:var(--accent)">Supabase SQL Editor</a>, then refresh the page.</p>
     <pre class="setup-sql" id="setup-sql"></pre>
     <button class="setup-copy" onclick="navigator.clipboard.writeText(document.getElementById('setup-sql').textContent).then(()=>toast('SQL copied!','success'))">Copy SQL</button>
@@ -236,16 +308,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
     <div id="login-form">
       <div class="auth-title">Welcome back.</div>
       <div class="auth-sub">Sign into Bayou</div>
-      <button class="cb-btn" id="cb-btn" onclick="openCBAuth()">
-        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        Sign in with Chat Bubble
+      <button class="cb-btn" id="gh-btn" onclick="doGithubAuth()" style="border-color:rgba(255,255,255,0.1);background:#161b22;color:#e6edf3">
+        <i class="fa-brands fa-github" style="font-size:15px"></i>
+        Sign in with GitHub
       </button>
-      <div class="cb-pending" id="cb-pending">
-        <div class="cb-dot"></div>
-        <div class="cb-pending-text">Waiting for Chat Bubble authorization…</div>
-        <button class="cb-cancel" onclick="cancelCBAuth()">Cancel</button>
-      </div>
-      <div class="auth-divider"><div class="auth-divider-line"></div><div class="auth-divider-text">or sign in with email</div><div class="auth-divider-line"></div></div>
+      <div class="auth-divider"><div class="auth-divider-line"></div><div class="auth-divider-text">or use email</div><div class="auth-divider-line"></div></div>
       <div class="form-field"><label class="form-label">Email</label><input class="form-input" id="li-email" type="email" placeholder="you@email.com" autocomplete="email"></div>
       <div class="form-field"><label class="form-label">Password</label><input class="form-input" id="li-pw" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="auth-btn" id="li-btn" onclick="doLogin()">Sign In</button>
@@ -255,6 +322,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
     <div id="signup-form" style="display:none">
       <div class="auth-title">Join Bayou.</div>
       <div class="auth-sub">Create your account</div>
+      <button class="cb-btn" onclick="doGithubAuth()" style="border-color:rgba(255,255,255,0.1);background:#161b22;color:#e6edf3">
+        <i class="fa-brands fa-github" style="font-size:15px"></i>
+        Sign up with GitHub
+      </button>
+      <div class="auth-divider"><div class="auth-divider-line"></div><div class="auth-divider-text">or use email</div><div class="auth-divider-line"></div></div>
       <div class="form-field"><label class="form-label">Email</label><input class="form-input" id="su-email" type="email" placeholder="you@email.com" autocomplete="email"></div>
       <div class="form-field">
         <label class="form-label">Password</label>
@@ -270,7 +342,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 <!-- BROWSER -->
 <div id="browser" class="hidden">
   <div id="incognito-bar">
-    👤 Incognito mode — history and passwords are not saved
+    <i class="fa-solid fa-user-secret"></i> Incognito mode — history and passwords are not saved
     <span style="flex:1"></span>
     <button onclick="closeAllIncog()" style="background:none;border:none;color:var(--incog);font-family:var(--mono);font-size:11px;cursor:pointer;opacity:0.7">Close all incognito tabs</button>
   </div>
@@ -278,7 +350,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
   <div id="tabs-bar">
     <div id="tab-list"></div>
     <button class="tab-new" onclick="newTab()" title="New tab (Ctrl+T)">+</button>
-    <button class="tab-incog-new" onclick="newTab(true)" title="New incognito tab (Ctrl+Shift+N)">👤</button>
+    <button class="tab-incog-new" onclick="newTab(true)" title="New incognito tab (Ctrl+Shift+N)"><i class="fa-solid fa-user-secret"></i></button>
   </div>
 
   <div id="chrome-bar">
@@ -299,8 +371,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
       <input type="text" id="address-input" placeholder="Search or enter address…" autocomplete="off" spellcheck="false"
         onkeydown="if(event.key==='Enter')navigate(this.value)" onfocus="this.select()">
     </div>
+    <button class="ctool" id="fav-btn" onclick="toggleFavorite()" title="Favorite this page">
+      <i class="fa-solid fa-star"></i>
+    </button>
+    <button class="ctool" id="rb-btn" onclick="navigate('bayou://riverbank')" title="Riverbank — Extensions &amp; Themes">
+      <i class="fa-solid fa-store"></i>
+    </button>
     <button class="ctool" id="bm-btn" onclick="toggleBookmark()" title="Bookmark this page">
-      <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+      <i class="fa-solid fa-bookmark"></i>
+    </button>
+    <button class="ctool" onclick="openPanel('favorites')" title="Favorites">
+      <i class="fa-solid fa-star"></i>
     </button>
     <button class="ctool" onclick="openPanel('history')" title="History">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -326,6 +407,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
   <div class="panel-hd"><span class="panel-ttl">History</span><button class="panel-x" onclick="closePanel()">×</button></div>
   <div class="panel-body" id="ph-body"></div>
 </div>
+<div class="panel" id="panel-favorites">
+  <div class="panel-hd"><span class="panel-ttl">Favorites</span><button class="panel-x" onclick="closePanel()">×</button></div>
+  <div class="panel-body" id="pf-body"></div>
+</div>
 <div class="panel" id="panel-bookmarks">
   <div class="panel-hd"><span class="panel-ttl">Bookmarks</span><button class="panel-x" onclick="closePanel()">×</button></div>
   <div class="panel-body" id="pb-body"></div>
@@ -338,11 +423,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 <!-- USER DROPDOWN -->
 <div class="udd" id="udd">
   <div class="udd-info"><div class="udd-name" id="udd-name">—</div><div class="udd-email" id="udd-email">—</div></div>
-  <button class="ddi" onclick="openPanel('history');closeUDD()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>History</button>
-  <button class="ddi" onclick="openPanel('bookmarks');closeUDD()"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>Bookmarks</button>
-  <button class="ddi" onclick="openPanel('passwords');closeUDD()"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>Passwords</button>
+  <button class="ddi" onclick="openPanel('history');closeUDD()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> History</button>
+  <button class="ddi" onclick="openPanel('favorites');closeUDD()"><i class="fa-solid fa-star"></i> Favorites</button>
+  <button class="ddi" onclick="openPanel('bookmarks');closeUDD()"><i class="fa-solid fa-bookmark"></i> Bookmarks</button>
+  <button class="ddi" onclick="openPanel('passwords');closeUDD()"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Passwords</button>
   <div class="ddsep"></div>
-  <button class="ddi danger" onclick="doLogout()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out</button>
+  <button class="ddi danger" onclick="doLogout()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Sign Out</button>
 </div>
 
 <!-- SAVE PASSWORD -->
@@ -354,18 +440,105 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 
 <div class="toast" id="toast-el"></div>
 
+
+<!-- RIVERBANK -->
+<div id="riverbank">
+  <div class="rb-hd">
+    <span class="rb-logo">Riverbank</span>
+    <div class="rb-tabs">
+      <button class="rb-tab active" onclick="rbTab('extensions')"><i class="fa-solid fa-puzzle-piece"></i> Extensions</button>
+      <button class="rb-tab" onclick="rbTab('themes')"><i class="fa-solid fa-palette"></i> Themes</button>
+      <button class="rb-tab" onclick="rbTab('installed')"><i class="fa-solid fa-check-circle"></i> Installed</button>
+      <button class="rb-tab" onclick="rbTab('submit')"><i class="fa-solid fa-upload"></i> Submit</button>
+    </div>
+    <button class="rb-close" onclick="closeRiverbank()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="rb-body">
+
+    <!-- Extensions -->
+    <div class="rb-section active" id="rb-extensions">
+      <div class="rb-section-title">Extensions</div>
+      <div class="rb-section-sub">Add functionality to your browser</div>
+      <div class="rb-grid" id="rb-ext-grid"><div style="color:var(--text-muted);font-size:12px;padding:20px 0">Loading...</div></div>
+    </div>
+
+    <!-- Themes -->
+    <div class="rb-section" id="rb-themes">
+      <div class="rb-section-title">Themes</div>
+      <div class="rb-section-sub">Customize how Bayou looks</div>
+      <div class="rb-grid" id="rb-theme-grid"><div style="color:var(--text-muted);font-size:12px;padding:20px 0">Loading...</div></div>
+    </div>
+
+    <!-- Installed -->
+    <div class="rb-section" id="rb-installed">
+      <div class="rb-section-title">Installed</div>
+      <div class="rb-section-sub">Manage your extensions and themes</div>
+      <div class="rb-grid" id="rb-installed-grid"><div style="color:var(--text-muted);font-size:12px;padding:20px 0">Nothing installed yet.</div></div>
+    </div>
+
+    <!-- Submit -->
+    <div class="rb-section" id="rb-submit">
+      <div class="rb-section-title">Submit to Riverbank</div>
+      <div class="rb-section-sub">Fill out this form to submit your extension or theme for review. It will be reviewed by the Bayou team before being listed.</div>
+      <div class="rb-form" style="margin-top:24px">
+        <div class="form-field"><label class="form-label">Name</label><input class="form-input" id="rb-sub-name" placeholder="My Awesome Extension"></div>
+        <div class="form-field"><label class="form-label">Type</label>
+          <select id="rb-sub-type" class="form-input" style="background:var(--surface2)">
+            <option value="extension">Extension</option>
+            <option value="theme">Theme</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">Description</label><textarea id="rb-sub-desc" placeholder="What does it do?"></textarea></div>
+        <div class="form-field"><label class="form-label">Icon (emoji or FA class e.g. fa-moon)</label><input class="form-input" id="rb-sub-icon" placeholder="fa-moon"></div>
+        <div class="form-field"><label class="form-label">CSS to inject (for themes/dark mode/etc)</label><textarea id="rb-sub-css" placeholder="body { background: #000 !important; }" style="min-height:120px;font-size:11px"></textarea></div>
+        <div class="form-field"><label class="form-label">JavaScript to inject (for extensions)</label><textarea id="rb-sub-js" placeholder="// Your extension code here" style="min-height:120px;font-size:11px"></textarea></div>
+        <div class="form-field"><label class="form-label">URL match pattern (leave blank for all sites)</label><input class="form-input" id="rb-sub-match" placeholder="*.youtube.com or leave blank"></div>
+        <div class="form-field"><label class="form-label">Your name / handle</label><input class="form-input" id="rb-sub-author" placeholder="@yourhandle"></div>
+        <button class="rb-btn primary" onclick="submitRiverbankForm()" style="margin-top:6px"><i class="fa-solid fa-paper-plane"></i> Submit for Review</button>
+        <div id="rb-sub-msg" style="margin-top:12px;font-size:12px;display:none"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DEV FORMS (bayou://developer-forms) -->
+<div id="devforms-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:8500;flex-direction:column">
+  <div class="rb-hd">
+    <span class="rb-logo" style="color:var(--danger)">Developer Forms</span>
+    <div style="flex:1"></div>
+    <button class="rb-close" onclick="document.getElementById('devforms-screen').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="rb-body">
+    <div id="devforms-body"><div style="color:var(--text-muted);font-size:12px">Loading...</div></div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu">
+  <button class="ctx-item" id="ctx-newtab"><i class="fa-solid fa-plus"></i> Open in New Tab</button>
+  <button class="ctx-item" id="ctx-copy"><i class="fa-solid fa-copy"></i> Copy Link</button>
+  <div class="ctx-sep"></div>
+  <button class="ctx-item" id="ctx-save"><i class="fa-solid fa-download"></i> Save As</button>
+</div>
+
+
 <script>
 /* ══════════════════════════════════
-   ⚙ CONFIG — fill these in
+   CONFIG — fill these in
    ══════════════════════════════════ */
 const SB_URL  = 'https://tjhzxkpifuzhmmrygdrk.supabase.co';
 const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqaHp4a3BpZnV6aG1tcnlnZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjQ4MzcsImV4cCI6MjA4ODMwMDgzN30.yAzitflcSFyPbNPg75Oov8hIcXRAqMW6lcfBOwDDT7E';
 // Your Railway proxy URL e.g. https://bayou-proxy.up.railway.app
-const PROXY   = 'https://boyouproxy.netlify.app';
-// Chat Bubble OAuth (identical to Bubble's flow)
-const CB_BRIDGE  = 'https://partials-gh.github.io/chatbubble/bridge.html?source=bayou';
-const CB_SUFFIX  = '@cb.bayou.net';
-const CB_ORIGIN  = 'https://partials-gh.github.io';
+// Proxy chain — P1 is primary, P2 is backup
+// To add your second Netlify proxy, replace BAYOU_PROXY_2 below
+const PROXIES = [
+  { id: 'P1', url: 'https://boyouproxy.netlify.app', name: 'Netlify 1' },
+  { id: 'P2', url: 'BAYOU_PROXY_2', name: 'Netlify 2' },
+];
+let activeProxyIdx = 0;
+function getProxy() { return PROXIES[activeProxyIdx]; }
+
 const SEARCH     = 'https://www.google.com/search?q=';
 
 const SETUP_SQL = `-- Bayou — run in Supabase SQL Editor then refresh
@@ -414,7 +587,50 @@ alter table public.bayou_passwords enable row level security;
 create policy "own_tabs"      on public.bayou_tabs      for all using (auth.uid() = user_id);
 create policy "own_history"   on public.bayou_history   for all using (auth.uid() = user_id);
 create policy "own_bookmarks" on public.bayou_bookmarks for all using (auth.uid() = user_id);
-create policy "own_passwords" on public.bayou_passwords for all using (auth.uid() = user_id);`;
+create policy "own_passwords" on public.bayou_passwords for all using (auth.uid() = user_id);
+
+-- Riverbank
+create table if not exists public.riverbank_items (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  type text not null check (type in ('extension','theme')),
+  description text default '',
+  icon text default 'fa-puzzle-piece',
+  css text default '',
+  js text default '',
+  match_pattern text default '',
+  author text default '',
+  status text default 'pending' check (status in ('pending','approved','declined')),
+  created_at timestamptz default now()
+);
+create table if not exists public.riverbank_installed (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  item_id uuid references public.riverbank_items(id) on delete cascade not null,
+  enabled boolean default true,
+  installed_at timestamptz default now(),
+  unique(user_id, item_id)
+);
+create table if not exists public.riverbank_submissions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  type text not null,
+  description text default '',
+  icon text default '',
+  css text default '',
+  js text default '',
+  match_pattern text default '',
+  author text default '',
+  status text default 'pending',
+  submitted_at timestamptz default now()
+);
+alter table public.riverbank_items enable row level security;
+alter table public.riverbank_installed enable row level security;
+alter table public.riverbank_submissions enable row level security;
+create policy "read_approved" on public.riverbank_items for select using (status = 'approved');
+create policy "own_installed" on public.riverbank_installed for all using (auth.uid() = user_id);
+create policy "own_submissions" on public.riverbank_submissions for all using (auth.uid() = user_id);`;
 
 /* ══════════════════════════════════
    STATE
@@ -423,7 +639,6 @@ let sb, currentUser = null;
 let tabs = [], activeId = null;
 let bookmarkUrls = new Set();
 let pendingSPW = null;
-let cbPopup = null, cbHandler = null;
 let ptimer = null;
 
 document.getElementById('setup-sql').textContent = SETUP_SQL;
@@ -432,31 +647,36 @@ document.getElementById('setup-sql').textContent = SETUP_SQL;
    INIT
    ══════════════════════════════════ */
 async function init() {
-  if (SB_URL === 'https://tjhzxkpifuzhmmrygdrk.supabase.co') {
-    document.getElementById('auth-screen').classList.remove('hidden');
-    toast('⚠ Replace Supabase config at top of file!', 'error');
-    return;
-  }
-  sb = supabase.createClient(SB_URL, SB_ANON);
-  const { error: tc } = await sb.from('bayou_tabs').select('id').limit(1);
-  if (tc && (tc.code === '42P01' || tc.message?.includes('does not exist'))) {
-    document.getElementById('setup-screen').classList.add('on'); return;
-  }
+  sb = supabase.createClient(SB_URL, SB_ANON, {
+    auth: {
+      flowType: 'implicit',
+      detectSessionInUrl: true,
+      persistSession: true,
+    }
+  });
   const { data: { session } } = await sb.auth.getSession();
   if (session) { currentUser = session.user; await enterBrowser(); }
   else { document.getElementById('auth-screen').classList.remove('hidden'); }
   sb.auth.onAuthStateChange(async (e, s) => {
-    if (e === 'SIGNED_IN' && s) { currentUser = s.user; await enterBrowser(); }
-    else if (e === 'SIGNED_OUT') { currentUser = null; exitBrowser(); }
+    if ((e === 'SIGNED_IN' || e === 'TOKEN_REFRESHED') && s && !currentUser) {
+      currentUser = s.user; await enterBrowser();
+    }
+    if (e === 'SIGNED_OUT') { currentUser = null; exitBrowser(); }
   });
 }
 
 async function enterBrowser() {
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('browser').classList.remove('hidden');
+  // Clean access token from URL without adding to history
+  if (window.location.hash || window.location.search.includes('code=')) {
+    window.history.replaceState(null, '', window.location.pathname);
+  }
   updateUserUI();
   await loadBMUrls();
   await restoreTabs();
+  await loadAndApplyInstalled();
+  setTimeout(updProxyBadge, 100);
 }
 
 function exitBrowser() {
@@ -490,8 +710,13 @@ async function doLogin() {
   const em=$('li-email').value.trim(), pw=$('li-pw').value, btn=$('li-btn');
   if(!em||!pw){showAE('Fill in all fields.');return;}
   btn.disabled=true; btn.textContent='Signing in…';
-  const{error}=await sb.auth.signInWithPassword({email:em,password:pw});
-  if(error){showAE(error.message);btn.disabled=false;btn.textContent='Sign In';}
+  console.log('[Bayou] attempting login for', em);
+  const{data,error}=await sb.auth.signInWithPassword({email:em,password:pw});
+  console.log('[Bayou] login result:', {data, error});
+  if(error){showAE(error.message);btn.disabled=false;btn.textContent='Sign In';return;}
+  console.log('[Bayou] calling enterBrowser');
+  if(data?.user){currentUser=data.user;await enterBrowser();}
+  else{showAE('No user returned — try again.');btn.disabled=false;btn.textContent='Sign In';}
 }
 
 async function doSignup() {
@@ -500,42 +725,25 @@ async function doSignup() {
   if(!em||!pw){showAE('Fill in all fields.');return;}
   if(!/[A-Z]/.test(pw)||!/[a-z]/.test(pw)||!/[0-9]/.test(pw)||!/[^A-Za-z0-9]/.test(pw)){showAE('Password needs uppercase, lowercase, number, and special char.');return;}
   btn.disabled=true; btn.textContent='Creating…';
-  const{error}=await sb.auth.signUp({email:em,password:pw});
-  if(error){showAE(error.message);btn.disabled=false;btn.textContent='Create Account';}
-  else{toast('Account created! Check your email.','success');btn.disabled=false;btn.textContent='Create Account';}
+  const{data,error}=await sb.auth.signUp({email:em,password:pw,options:{emailRedirectTo:null}});
+  if(error){showAE(error.message);btn.disabled=false;btn.textContent='Create Account';return;}
+  // Auto login immediately after signup
+  const{data:ld,error:le}=await sb.auth.signInWithPassword({email:em,password:pw});
+  if(le){showAE('Account created! Please sign in.');btn.disabled=false;btn.textContent='Create Account';showLogin();return;}
+  if(ld?.user){currentUser=ld.user;await enterBrowser();}
+}
+
+async function doGithubAuth() {
+  const{error}=await sb.auth.signInWithOAuth({
+    provider:'github',
+    options:{redirectTo:window.location.href}
+  });
+  if(error) showAE('GitHub auth failed: '+error.message);
 }
 
 async function doLogout() { await sb.auth.signOut(); closeUDD(); }
 
-function openCBAuth() {
-  const w=420,h=580,l=Math.round(window.screenX+(window.outerWidth-w)/2),t=Math.round(window.screenY+(window.outerHeight-h)/2);
-  cbPopup=window.open(CB_BRIDGE,'cb_auth',`width=${w},height=${h},left=${l},top=${t},resizable=no`);
-  $('cb-pending').classList.add('visible'); $('cb-btn').style.display='none';
-  cbHandler=async(ev)=>{
-    if(ev.origin!==CB_ORIGIN)return;
-    if(!ev.data||ev.data.type!=='CHATBUBBLE_AUTH_SUCCESS')return;
-    window.removeEventListener('message',cbHandler); cbHandler=null;
-    hideCB(); await handleCBAuth(ev.data);
-  };
-  window.addEventListener('message',cbHandler);
-  const poll=setInterval(()=>{if(cbPopup&&cbPopup.closed){clearInterval(poll);if(cbHandler){window.removeEventListener('message',cbHandler);cbHandler=null;hideCB();}}},500);
-}
-function cancelCBAuth(){if(cbPopup&&!cbPopup.closed)cbPopup.close();if(cbHandler){window.removeEventListener('message',cbHandler);cbHandler=null;}hideCB();}
-function hideCB(){$('cb-pending').classList.remove('visible');$('cb-btn').style.display='';}
 
-async function handleCBAuth(data) {
-  const uid=data.user_id, uname=data.username||'user_'+uid.slice(0,8);
-  const email=`cb_${uid}${CB_SUFFIX}`;
-  const pw=btoa(`cb_secret_${uid}_bayou_2025`).slice(0,32)+'Aa1!';
-  clearAE();
-  let{data:sd,error:se}=await sb.auth.signInWithPassword({email,password:pw});
-  if(!se&&sd?.user){currentUser=sd.user;await enterBrowser();return;}
-  await sb.auth.signUp({email,password:pw});
-  const{data:sd2,error:se2}=await sb.auth.signInWithPassword({email,password:pw});
-  if(se2){showAE('Chat Bubble auth failed: '+se2.message);return;}
-  currentUser=sd2.user; await enterBrowser();
-  toast('Welcome to Bayou, '+uname+'!','success');
-}
 
 /* ══════════════════════════════════
    TABS
@@ -561,7 +769,7 @@ function mkTab(title,url,incog,id) {
   const frame=document.createElement('div');
   frame.className='bframe'; frame.id='f-'+id;
   $('frames').appendChild(frame);
-  tabs.push({id,title,url,favicon:'',incog,frame,loading:false});
+  tabs.push({id,title,url,favicon:'',incog,frame,loading:false,history:[],histIdx:-1});
   renderTabs(); return id;
 }
 
@@ -573,7 +781,7 @@ function renderTabs() {
     el.onclick=e=>{if(!e.target.classList.contains('tab-x'))activate(t.id);};
     const favicon=document.createElement('div');
     favicon.className='tab-favicon';
-    favicon.textContent=t.loading?'⟳':'🌿';
+    favicon.innerHTML=t.loading?'<i class="fa-solid fa-rotate fa-spin"></i>':'<i class="fa-solid fa-leaf"></i>';
     const title=document.createElement('div');
     title.className='tab-title';
     title.textContent=t.title;
@@ -593,7 +801,7 @@ function activate(id) {
   tabs.forEach(t=>t.frame.classList.toggle('active',t.id===id));
   const t=tabs.find(x=>x.id===id);
   if(t){$('address-input').value=t.url||'';updBMBtn(t.url);}
-  renderTabs(); updIncogBar();
+  renderTabs(); updIncogBar(); updNavBtns();
 }
 
 function closeTab(id) {
@@ -625,19 +833,107 @@ async function saveTab(id) {
    ══════════════════════════════════ */
 function navigate(raw,tid=activeId,skipHist=false) {
   if(!raw||!raw.trim())return;
+  // Handle bayou:// internal URLs
+  if(raw.trim().startsWith('bayou://')) { handleBayouUrl(raw.trim()); return; }
   const t=tabs.find(x=>x.id===tid); if(!t)return;
   let url=raw.trim();
   const isUrl=/^https?:\/\//i.test(url)||/^[a-z0-9]+([\-.]?[a-z0-9]+)*\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(url);
   if(!isUrl) url=SEARCH+encodeURIComponent(url);
   else if(!/^https?:\/\//i.test(url)) url='https://'+url;
   t.url=url; t.title='Loading…'; t.loading=true;
-  $('address-input').value=url; renderTabs();
-  
+  $('address-input').value=url;
+  // Track navigation history per tab
+  if(!skipHist && url) {
+    t.history = t.history.slice(0, t.histIdx+1);
+    t.history.push(url);
+    t.histIdx = t.history.length - 1;
+  }
+  updNavBtns();
+  renderTabs();
   loadFrame(t,url,skipHist);
 }
 
+async function testProxy(proxyUrl) {
+  try {
+    const res = await fetch(proxyUrl.replace(/\/$/,'')+'/.netlify/functions/proxy?url='+encodeURIComponent('https://example.com'), { signal: AbortSignal.timeout(4000) });
+    return res.ok || res.status < 500;
+  } catch(e) { return false; }
+}
+
+async function getWorkingProxy() {
+  for (let i = 0; i < PROXIES.length; i++) {
+    if (PROXIES[i].url === 'BAYOU_PROXY_2') continue;
+    const ok = await testProxy(PROXIES[i].url);
+    if (ok) { activeProxyIdx = i; updProxyBadge(); return PROXIES[i]; }
+  }
+  return PROXIES[0]; // fallback to first even if failing
+}
+
+function updProxyBadge() {
+  const p = getProxy();
+  if (!p) return;
+  let badge = document.getElementById('proxy-badge');
+  if (!badge) {
+    const wrap = document.querySelector('.addr-wrap');
+    if (!wrap) return;
+    badge = document.createElement('div');
+    badge.id = 'proxy-badge';
+    badge.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:9px;padding:2px 6px;border-radius:4px;font-family:var(--mono);pointer-events:none;z-index:10;';
+    wrap.appendChild(badge);
+  }
+  badge.textContent = p.id;
+  badge.title = p.name + ' — click address bar to switch';
+  badge.style.background = activeProxyIdx === 0 ? 'var(--accent-dim)' : '#1a1424';
+  badge.style.color = activeProxyIdx === 0 ? 'var(--accent)' : 'var(--incog)';
+  badge.style.border = activeProxyIdx === 0 ? '1px solid rgba(163,196,106,0.3)' : '1px solid var(--incog-border)';
+}
+
+// URLs that should never be proxied — open directly
+const NO_PROXY_PATTERNS = [
+  /accounts\.google\.com/,
+  /github\.com\/login/,
+  /github\.com\/oauth/,
+  /accounts\.github\.com/,
+  /discord\.com\/oauth/,
+  /twitter\.com\/i\/oauth/,
+  /appleid\.apple\.com/,
+  /supabase\.co\/auth/,
+  /partials-gh\.github\.io\/chatbubble/,
+];
+
+function shouldProxy(url) {
+  try {
+    return !NO_PROXY_PATTERNS.some(p => p.test(url));
+  } catch(e) { return true; }
+}
+
 function loadFrame(t,url,skipHist) {
-  const proxied=PROXY.replace(/\/$/,'')+'/.netlify/functions/proxy?url='+encodeURIComponent(url);
+  const proxy = getProxy();
+
+  // Don't proxy auth/OAuth pages — load them directly
+  if (!shouldProxy(url)) {
+    const proxied = url;
+    const safeId = t.id;
+    const iframe = document.createElement('iframe');
+    iframe.className = 'pframe';
+    iframe.id = 'if-'+safeId;
+    iframe.src = proxied;
+    iframe.setAttribute('sandbox','allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation');
+    iframe.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture');
+    iframe.onload=()=>onLoad(safeId,url);
+    iframe.onerror=()=>onErr(safeId);
+    const loading=document.createElement('div');
+    loading.className='frame-loading';
+    loading.id='fl-'+safeId;
+    loading.innerHTML='<div class="spinner"></div><div>Loading directly...</div>';
+    t.frame.innerHTML='';
+    t.frame.appendChild(loading);
+    t.frame.appendChild(iframe);
+    startP();
+    return;
+  }
+
+  const proxied = proxy.url.replace(/\/$/,'')+'/.netlify/functions/proxy?url='+encodeURIComponent(url);
   const safeId=t.id;
   const iframe=document.createElement('iframe');
   iframe.className='pframe';
@@ -646,11 +942,21 @@ function loadFrame(t,url,skipHist) {
   iframe.setAttribute('sandbox','allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation');
   iframe.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture');
   iframe.onload=()=>onLoad(safeId,url);
-  iframe.onerror=()=>onErr(safeId);
+  iframe.onerror=async()=>{
+    // Try next proxy on error
+    if(activeProxyIdx < PROXIES.length - 1 && PROXIES[activeProxyIdx+1].url !== 'BAYOU_PROXY_2') {
+      activeProxyIdx++;
+      updProxyBadge();
+      toast('Proxy 1 failed — switched to '+getProxy().name, 'error');
+      loadFrame(t,url,skipHist);
+    } else {
+      onErr(safeId);
+    }
+  };
   const loading=document.createElement('div');
   loading.className='frame-loading';
   loading.id='fl-'+safeId;
-  loading.innerHTML='<div class="spinner"></div><div>Loading…</div>';
+  loading.innerHTML='<div class="spinner"></div><div>Loading via '+proxy.id+'</div>';
   t.frame.innerHTML='';
   t.frame.appendChild(loading);
   t.frame.appendChild(iframe);
@@ -661,7 +967,7 @@ function loadFrame(t,url,skipHist) {
 function showNoProxy(t,url) {
   t.frame.innerHTML=`
     <div class="newtab" style="gap:16px">
-      <div style="font-size:40px">🚧</div>
+      <div style="font-size:28px;color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i></div>
       <div style="font-family:var(--serif);font-size:22px">Proxy not set up yet</div>
       <div style="font-size:12px;color:var(--text-muted);max-width:420px;text-align:center;line-height:1.9">
         Deploy the proxy to Railway first, then replace<br>
@@ -676,6 +982,8 @@ function showNoProxy(t,url) {
 function onLoad(tid,url) {
   const t=tabs.find(x=>x.id===tid); if(!t)return;
   t.loading=false;
+  // Inject active extensions into newly loaded frame
+  setTimeout(injectIntoFrames, 200);
   try{ const f=$('if-'+tid); const tt=f?.contentDocument?.title; t.title=tt||new URL(url).hostname; }
   catch(e){ try{t.title=new URL(url).hostname;}catch(e2){t.title=url;} }
   $('fl-'+tid)?.remove(); stopP(); renderTabs(); saveTab(tid); updBMBtn(url);
@@ -692,18 +1000,18 @@ function renderNewTab(t) {
   t.frame.innerHTML=`
     <div class="newtab">
       <div class="nt-logo">Bayou</div>
-      ${t.incog?'<div class="nt-incog">&#128100; Incognito &mdash; history not saved</div>':''}
+      ${t.incog?'<div class="nt-incog"><i class="fa-solid fa-user-secret"></i> Incognito &mdash; history not saved</div>':''}
       <div class="nt-search">
         <div class="nt-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
         <input class="nt-input" id="nt-input-${tid}" placeholder="Search or enter a URL&hellip;" autocomplete="off" spellcheck="false">
       </div>
       <div class="nt-shortcuts" id="nt-sc-${tid}">
-        <button class="sc" data-url="https://google.com"><span class="sc-icon">&#128269;</span><span class="sc-name">Google</span></button>
-        <button class="sc" data-url="https://invidious.io"><span class="sc-icon">&#9654;&#65039;</span><span class="sc-name">YouTube</span></button>
-        <button class="sc" data-url="https://github.com"><span class="sc-icon">&#128025;</span><span class="sc-name">GitHub</span></button>
-        <button class="sc" data-url="https://old.reddit.com"><span class="sc-icon">&#129302;</span><span class="sc-name">Reddit</span></button>
-        <button class="sc" data-url="https://wikipedia.org"><span class="sc-icon">&#128218;</span><span class="sc-name">Wikipedia</span></button>
-        <button class="sc" data-url="https://partials-gh.github.io/bubble"><span class="sc-icon">&#128172;</span><span class="sc-name">Bubble</span></button>
+        <button class="sc" data-url="https://google.com"><span class="sc-icon"><i class="fa-solid fa-magnifying-glass"></i></span><span class="sc-name">Google</span></button>
+        <button class="sc" data-url="https://invidious.io"><span class="sc-icon"><i class="fa-brands fa-youtube"></i></span><span class="sc-name">YouTube</span></button>
+        <button class="sc" data-url="https://github.com"><span class="sc-icon"><i class="fa-brands fa-github"></i></span><span class="sc-name">GitHub</span></button>
+        <button class="sc" data-url="https://old.reddit.com"><span class="sc-icon"><i class="fa-brands fa-reddit"></i></span><span class="sc-name">Reddit</span></button>
+        <button class="sc" data-url="https://wikipedia.org"><span class="sc-icon"><i class="fa-solid fa-book"></i></span><span class="sc-name">Wikipedia</span></button>
+        <button class="sc" data-url="bayou://riverbank"><span class="sc-icon"><i class="fa-solid fa-store"></i></span><span class="sc-name">Riverbank</span></button>
       </div>
     </div>`;
   const inp = t.frame.querySelector('#nt-input-'+tid);
@@ -713,8 +1021,19 @@ function renderNewTab(t) {
   setTimeout(()=>inp?.focus(), 100);
 }
 
-function goBack(){try{$('if-'+activeId)?.contentWindow?.history?.back();}catch(e){}}
-function goFwd(){try{$('if-'+activeId)?.contentWindow?.history?.forward();}catch(e){}}
+function goBack(){
+  const t=tabs.find(x=>x.id===activeId); if(!t)return;
+  if(t.histIdx>0){t.histIdx--;navigate(t.history[t.histIdx],activeId,true);}
+}
+function goFwd(){
+  const t=tabs.find(x=>x.id===activeId); if(!t)return;
+  if(t.histIdx<t.history.length-1){t.histIdx++;navigate(t.history[t.histIdx],activeId,true);}
+}
+function updNavBtns(){
+  const t=tabs.find(x=>x.id===activeId);
+  $('btn-back').disabled=!t||t.histIdx<=0;
+  $('btn-fwd').disabled=!t||t.histIdx>=t.history.length-1;
+}
 
 /* ══════════════════════════════════
    PROGRESS BAR
@@ -744,12 +1063,12 @@ async function toggleBookmark(){
 async function loadBMPanel(){
   const body=$('pb-body'); body.innerHTML='<div class="pempty">Loading…</div>';
   const{data}=await sb.from('bayou_bookmarks').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
-  if(!data||!data.length){body.innerHTML='<div class="pempty">No bookmarks yet.<br>Click ★ to save a page.</div>';return;}
+  if(!data||!data.length){body.innerHTML='<div class="pempty">No bookmarks yet.<br>Click the bookmark icon to save a page.</div>';return;}
   const bmFrag=document.createDocumentFragment();
   data.forEach(b=>{
     const el=document.createElement('div');
     el.className='pitem';
-    el.innerHTML=`<div class="pitem-icon">⭐</div><div class="pitem-info"><div class="pitem-title">${esc(b.title||b.url)}</div><div class="pitem-sub">${esc(shortUrl(b.url))}</div></div><button class="pitem-del">×</button>`;
+    el.innerHTML=`<div class="pitem-icon"><i class="fa-solid fa-star"></i></div><div class="pitem-info"><div class="pitem-title">${esc(b.title||b.url)}</div><div class="pitem-sub">${esc(shortUrl(b.url))}</div></div><button class="pitem-del">×</button>`;
     el.querySelector('.pitem-del').onclick=e=>{e.stopPropagation();delBM(b.id,b.url,el);};
     el.onclick=()=>{navigate(b.url);closePanel();};
     bmFrag.appendChild(el);
@@ -779,7 +1098,7 @@ async function loadHistPanel(){
     items.forEach(h=>{
       const el=document.createElement('div');
       el.className='pitem';
-      el.innerHTML=`<div class="pitem-icon">🌐</div><div class="pitem-info"><div class="pitem-title">${esc(h.title||h.url)}</div><div class="pitem-sub">${esc(shortUrl(h.url))}</div></div><button class="pitem-del">×</button>`;
+      el.innerHTML=`<div class="pitem-icon"><i class="fa-solid fa-globe"></i></div><div class="pitem-info"><div class="pitem-title">${esc(h.title||h.url)}</div><div class="pitem-sub">${esc(shortUrl(h.url))}</div></div><button class="pitem-del">×</button>`;
       el.querySelector('.pitem-del').onclick=e=>{e.stopPropagation();delHist(h.id,el);};
       el.onclick=()=>{navigate(h.url);closePanel();};
       histFrag.appendChild(el);
@@ -804,9 +1123,9 @@ async function loadPwPanel(){
     el.style.cssText='flex-direction:column;align-items:flex-start;gap:4px;cursor:default';
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:9px;width:100%';
-    row.innerHTML=`<div class="pitem-icon">🔑</div><div class="pitem-info"><div class="pitem-title">${esc(p.site)}</div><div class="pitem-sub">${esc(p.username)}</div></div>`;
+    row.innerHTML=`<div class="pitem-icon"><i class="fa-solid fa-key"></i></div><div class="pitem-info"><div class="pitem-title">${esc(p.site)}</div><div class="pitem-sub">${esc(p.username)}</div></div>`;
     const eyeBtn=document.createElement('button');
-    eyeBtn.className='pw-eye'; eyeBtn.textContent='👁';
+    eyeBtn.className='pw-eye'; eyeBtn.innerHTML='<i class="fa-solid fa-eye"></i>';
     const delBtn=document.createElement('button');
     delBtn.className='pitem-del'; delBtn.textContent='×';
     const pwVal=document.createElement('div');
@@ -891,7 +1210,431 @@ function toast(msg,type=''){
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('on'),2800);
 }
 
+
+
+/* ══════════════════════════════════
+   RIVERBANK
+   ══════════════════════════════════ */
+const ADMIN_EMAIL = 'partials.github@atomicmail.io';
+let rbInstalledIds = new Set();
+let rbInstalledMap = {}; // item_id -> install record
+let activeExtensions = []; // currently active extensions
+let activeTheme = null;
+
+// Handle bayou:// URLs
+function handleBayouUrl(url) {
+  if (url === 'bayou://riverbank' || url === 'bayou://extensions') { openRiverbank(); return true; }
+  if (url === 'bayou://developer-forms') { openDevForms(); return true; }
+  return false;
+}
+
+function openRiverbank() {
+  document.getElementById('riverbank').classList.add('open');
+  rbTab('extensions');
+  loadRiverbankInstalled();
+}
+
+function closeRiverbank() {
+  document.getElementById('riverbank').classList.remove('open');
+}
+
+function rbTab(name) {
+  document.querySelectorAll('.rb-tab').forEach((t,i) => {
+    const names = ['extensions','themes','installed','submit'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.rb-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('rb-'+name)?.classList.add('active');
+  if (name === 'extensions') loadRiverbankStore('extension');
+  if (name === 'themes') loadRiverbankStore('theme');
+  if (name === 'installed') loadInstalledSection();
+}
+
+async function loadRiverbankInstalled() {
+  if (!currentUser) return;
+  const { data } = await sb.from('riverbank_installed').select('*, riverbank_items(*)').eq('user_id', currentUser.id);
+  rbInstalledIds = new Set((data||[]).map(r => r.item_id));
+  rbInstalledMap = {};
+  (data||[]).forEach(r => { rbInstalledMap[r.item_id] = r; });
+}
+
+async function loadRiverbankStore(type) {
+  const gridId = type === 'extension' ? 'rb-ext-grid' : 'rb-theme-grid';
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:20px 0">Loading...</div>';
+  await loadRiverbankInstalled();
+  const { data, error } = await sb.from('riverbank_items').select('*').eq('type', type).eq('status', 'approved');
+  if (error || !data || !data.length) {
+    grid.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:20px 0">No ' + type + 's available yet. Be the first to submit one!</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  data.forEach(item => grid.appendChild(makeRbCard(item)));
+}
+
+function makeRbCard(item) {
+  const installed = rbInstalledIds.has(item.id);
+  const rec = rbInstalledMap[item.id];
+  const enabled = rec ? rec.enabled : false;
+  const card = document.createElement('div');
+  card.className = 'rb-card';
+  const iconHtml = item.icon && item.icon.startsWith('fa-')
+    ? `<i class="fa-solid ${item.icon}"></i>`
+    : `<span style="font-size:20px">${item.icon||'?'}</span>`;
+  card.innerHTML = `
+    <div class="rb-card-icon">${iconHtml}</div>
+    <div class="rb-card-name">${esc(item.name)}</div>
+    <div class="rb-card-desc">${esc(item.description)}</div>
+    <div class="rb-card-author">by ${esc(item.author||'Unknown')}</div>
+    <div class="rb-card-footer">
+      <span class="rb-badge ${item.type}">${item.type}</span>
+      <div style="display:flex;gap:8px;align-items:center" id="rb-card-actions-${item.id}"></div>
+    </div>`;
+  const actions = card.querySelector('#rb-card-actions-'+item.id);
+  if (installed) {
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'rb-toggle ' + (enabled ? 'on' : 'off');
+    toggleBtn.title = enabled ? 'Disable' : 'Enable';
+    toggleBtn.onclick = () => toggleExtension(item, toggleBtn);
+    const uninstBtn = document.createElement('button');
+    uninstBtn.className = 'rb-btn danger';
+    uninstBtn.textContent = 'Remove';
+    uninstBtn.onclick = () => uninstallItem(item, card);
+    actions.appendChild(toggleBtn);
+    actions.appendChild(uninstBtn);
+  } else {
+    const instBtn = document.createElement('button');
+    instBtn.className = 'rb-btn primary';
+    instBtn.innerHTML = '<i class="fa-solid fa-download"></i> Install';
+    instBtn.onclick = () => installItem(item, instBtn);
+    actions.appendChild(instBtn);
+  }
+  return card;
+}
+
+async function installItem(item, btn) {
+  btn.disabled = true; btn.textContent = 'Installing...';
+  const { error } = await sb.from('riverbank_installed').insert({ user_id: currentUser.id, item_id: item.id, enabled: true });
+  if (error) { toast('Install failed: ' + error.message, 'error'); btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-download"></i> Install'; return; }
+  await loadRiverbankInstalled();
+  applyExtension(item, true);
+  toast(item.name + ' installed!', 'success');
+  // Refresh card
+  const grid = document.getElementById(item.type === 'extension' ? 'rb-ext-grid' : 'rb-theme-grid');
+  const { data } = await sb.from('riverbank_items').select('*').eq('id', item.id).single();
+  if (data) {
+    const newCard = makeRbCard(data);
+    btn.closest('.rb-card').replaceWith(newCard);
+  }
+}
+
+async function uninstallItem(item, card) {
+  const rec = rbInstalledMap[item.id];
+  if (!rec) return;
+  await sb.from('riverbank_installed').delete().eq('id', rec.id);
+  await loadRiverbankInstalled();
+  removeExtension(item);
+  toast(item.name + ' removed.');
+  card.replaceWith(makeRbCard(item));
+}
+
+async function toggleExtension(item, btn) {
+  const rec = rbInstalledMap[item.id];
+  if (!rec) return;
+  const newEnabled = !rec.enabled;
+  await sb.from('riverbank_installed').update({ enabled: newEnabled }).eq('id', rec.id);
+  rec.enabled = newEnabled;
+  btn.className = 'rb-toggle ' + (newEnabled ? 'on' : 'off');
+  applyExtension(item, newEnabled);
+  toast(item.name + (newEnabled ? ' enabled.' : ' disabled.'));
+}
+
+async function loadInstalledSection() {
+  const grid = document.getElementById('rb-installed-grid');
+  grid.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:20px 0">Loading...</div>';
+  await loadRiverbankInstalled();
+  const { data } = await sb.from('riverbank_installed').select('*, riverbank_items(*)').eq('user_id', currentUser.id);
+  if (!data || !data.length) { grid.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:20px 0">Nothing installed yet.</div>'; return; }
+  grid.innerHTML = '';
+  data.forEach(r => { if (r.riverbank_items) grid.appendChild(makeRbCard(r.riverbank_items)); });
+}
+
+// Apply extension/theme to current pages
+function applyExtension(item, enable) {
+  if (item.type === 'theme') {
+    let el = document.getElementById('theme-'+item.id);
+    if (enable) {
+      if (!el) { el = document.createElement('style'); el.id = 'theme-'+item.id; document.head.appendChild(el); }
+      el.textContent = item.css || '';
+      activeTheme = item;
+    } else {
+      el?.remove();
+      if (activeTheme?.id === item.id) activeTheme = null;
+    }
+    return;
+  }
+  // Extension - inject into all active iframes
+  if (enable) {
+    activeExtensions = activeExtensions.filter(e => e.id !== item.id);
+    activeExtensions.push(item);
+  } else {
+    activeExtensions = activeExtensions.filter(e => e.id !== item.id);
+  }
+  injectIntoFrames();
+}
+
+function removeExtension(item) { applyExtension(item, false); }
+
+function injectIntoFrames() {
+  tabs.forEach(t => {
+    const iframe = document.getElementById('if-'+t.id);
+    if (!iframe) return;
+    try {
+      const win = iframe.contentWindow;
+      activeExtensions.forEach(ext => {
+        if (ext.css) {
+          let s = iframe.contentDocument?.getElementById('bayou-ext-'+ext.id);
+          if (!s && iframe.contentDocument) {
+            s = iframe.contentDocument.createElement('style');
+            s.id = 'bayou-ext-'+ext.id;
+            iframe.contentDocument.head?.appendChild(s);
+            s.textContent = ext.css;
+          }
+        }
+        if (ext.js) {
+          try { win.eval(ext.js); } catch(e) {}
+        }
+      });
+    } catch(e) {}
+  });
+}
+
+async function loadAndApplyInstalled() {
+  if (!currentUser) return;
+  const { data } = await sb.from('riverbank_installed').select('*, riverbank_items(*)').eq('user_id', currentUser.id).eq('enabled', true);
+  (data||[]).forEach(r => { if (r.riverbank_items) applyExtension(r.riverbank_items, true); });
+}
+
+async function submitRiverbankForm() {
+  const name = document.getElementById('rb-sub-name').value.trim();
+  const type = document.getElementById('rb-sub-type').value;
+  const desc = document.getElementById('rb-sub-desc').value.trim();
+  const icon = document.getElementById('rb-sub-icon').value.trim();
+  const css = document.getElementById('rb-sub-css').value.trim();
+  const js = document.getElementById('rb-sub-js').value.trim();
+  const match = document.getElementById('rb-sub-match').value.trim();
+  const author = document.getElementById('rb-sub-author').value.trim();
+  const msg = document.getElementById('rb-sub-msg');
+
+  if (!name || !desc) { msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent='Name and description are required.'; return; }
+
+  const { error } = await sb.from('riverbank_submissions').insert({
+    user_id: currentUser.id, name, type, description: desc, icon, css, js, match_pattern: match, author, status: 'pending'
+  });
+
+  if (error) { msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent='Error: '+error.message; return; }
+  msg.style.display='block'; msg.style.color='var(--accent)';
+  msg.textContent = 'Submitted! Your '+type+' will be reviewed before appearing in Riverbank.';
+  ['rb-sub-name','rb-sub-desc','rb-sub-icon','rb-sub-css','rb-sub-js','rb-sub-match','rb-sub-author'].forEach(id => document.getElementById(id).value='');
+}
+
+// Developer forms (admin only)
+async function openDevForms() {
+  if (!currentUser || currentUser.email !== ADMIN_EMAIL) { toast('Access denied.', 'error'); return; }
+  const screen = document.getElementById('devforms-screen');
+  screen.style.display = 'flex';
+  const body = document.getElementById('devforms-body');
+  body.innerHTML = '<div style="color:var(--text-muted);font-size:12px">Loading submissions...</div>';
+  const { data, error } = await sb.from('riverbank_submissions').select('*').eq('status', 'pending').order('submitted_at', { ascending: false });
+  if (error) { body.innerHTML = '<div style="color:var(--danger);font-size:12px">Error: '+error.message+'</div>'; return; }
+  if (!data || !data.length) { body.innerHTML = '<div style="color:var(--text-muted);font-size:12px">No pending submissions.</div>'; return; }
+  body.innerHTML = '';
+  data.forEach(sub => {
+    const card = document.createElement('div');
+    card.className = 'dev-form-card';
+    card.innerHTML = `
+      <h3>${esc(sub.name)} <span class="rb-badge ${sub.type}" style="vertical-align:middle">${sub.type}</span></h3>
+      <div class="dev-form-row"><strong>Author:</strong> ${esc(sub.author||'—')}</div>
+      <div class="dev-form-row"><strong>Description:</strong> ${esc(sub.description||'—')}</div>
+      <div class="dev-form-row"><strong>Match:</strong> ${esc(sub.match_pattern||'All sites')}</div>
+      ${sub.css ? `<div class="dev-form-row"><strong>CSS:</strong> <code style="font-size:10px;color:var(--text-muted)">${esc(sub.css.slice(0,120))}${sub.css.length>120?'...':''}</code></div>` : ''}
+      ${sub.js ? `<div class="dev-form-row"><strong>JS:</strong> <code style="font-size:10px;color:var(--text-muted)">${esc(sub.js.slice(0,120))}${sub.js.length>120?'...':''}</code></div>` : ''}
+      <div class="dev-form-row"><strong>Submitted:</strong> ${new Date(sub.submitted_at).toLocaleString()}</div>
+      <div class="dev-form-actions">
+        <button class="rb-btn primary" onclick="approveSubmission('${sub.id}',${JSON.stringify(sub).replace(/'/g,"\'")} ,this)"><i class="fa-solid fa-check"></i> Approve</button>
+        <button class="rb-btn danger" onclick="declineSubmission('${sub.id}',this)"><i class="fa-solid fa-xmark"></i> Decline</button>
+      </div>`;
+    body.appendChild(card);
+  });
+}
+
+async function approveSubmission(id, sub, btn) {
+  btn.disabled = true; btn.textContent = 'Approving...';
+  // Create approved item in riverbank_items
+  const { error } = await sb.from('riverbank_items').insert({
+    name: sub.name, type: sub.type, description: sub.description,
+    icon: sub.icon||'fa-puzzle-piece', css: sub.css||'', js: sub.js||'',
+    match_pattern: sub.match_pattern||'', author: sub.author||'', status: 'approved'
+  });
+  if (error) { toast('Error: '+error.message, 'error'); btn.disabled=false; btn.textContent='Approve'; return; }
+  await sb.from('riverbank_submissions').update({ status: 'approved' }).eq('id', id);
+  btn.closest('.dev-form-card').remove();
+  toast('Approved and published!', 'success');
+}
+
+async function declineSubmission(id, btn) {
+  btn.disabled = true;
+  await sb.from('riverbank_submissions').update({ status: 'declined' }).eq('id', id);
+  btn.closest('.dev-form-card').remove();
+  toast('Submission declined.');
+}
+
+
+/* ══════════════════════════════════
+   CONTEXT MENU
+   ══════════════════════════════════ */
+let ctxTargetUrl = null;
+
+function showCtx(x, y, url) {
+  ctxTargetUrl = url;
+  const menu = document.getElementById('ctx-menu');
+  menu.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+  menu.style.top = Math.min(y, window.innerHeight - 160) + 'px';
+  menu.classList.add('on');
+}
+
+function hideCtx() {
+  document.getElementById('ctx-menu').classList.remove('on');
+  ctxTargetUrl = null;
+}
+
+// ctx button handlers wired after DOM ready
+function wireCtxMenu() {
+  document.getElementById('ctx-newtab').onclick = () => {
+    if (ctxTargetUrl) { newTab(); navigate(ctxTargetUrl); }
+    hideCtx();
+  };
+  document.getElementById('ctx-copy').onclick = () => {
+    if (ctxTargetUrl) navigator.clipboard.writeText(ctxTargetUrl).then(() => toast('Link copied!', 'success'));
+    hideCtx();
+  };
+  document.getElementById('ctx-save').onclick = async () => {
+    if (!ctxTargetUrl) { hideCtx(); return; }
+    const url = ctxTargetUrl;
+    hideCtx();
+    toast('Fetching file...');
+    try {
+      const proxy = getProxy();
+      const proxied = proxy.url.replace(/\/$/,'') + '/.netlify/functions/proxy?url=' + encodeURIComponent(url);
+      const res = await fetch(proxied);
+      const blob = await res.blob();
+      const reader = new FileReader();
+      reader.onload = () => {
+        const filename = url.split('/').pop().split('?')[0] || 'file';
+        try { localStorage.setItem('bayou_save_' + Date.now(), JSON.stringify({ url, filename, data: reader.result, savedAt: new Date().toISOString() })); } catch(e) {}
+        const a = document.createElement('a'); a.href = reader.result; a.download = filename; a.click();
+        toast('Downloaded: ' + filename, 'success');
+      };
+      reader.readAsDataURL(blob);
+    } catch(e) { toast('Save failed: ' + e.message, 'error'); }
+  };
+}
+
+
+
+document.addEventListener('click', e => { if (!e.target.closest('#ctx-menu')) hideCtx(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideCtx(); });
+document.getElementById('content-area').addEventListener('contextmenu', e => { e.preventDefault(); });
+
+window.addEventListener('message', e => {
+  if (!e.data || typeof e.data !== 'object') return;
+  if (e.data.type === 'BAYOU_NAVIGATE' && e.data.url) navigate(e.data.url);
+  if (e.data.type === 'BAYOU_CONTEXTMENU') showCtx(e.data.x, e.data.y, e.data.url);
+});
+
+document.addEventListener("DOMContentLoaded", wireCtxMenu);
 init();
 </script>
+
+<!-- RIVERBANK -->
+<div id="riverbank">
+  <div class="rb-hd">
+    <span class="rb-logo">Riverbank</span>
+    <div class="rb-tabs">
+      <button class="rb-tab active" onclick="rbTab('extensions')"><i class="fa-solid fa-puzzle-piece"></i> Extensions</button>
+      <button class="rb-tab" onclick="rbTab('themes')"><i class="fa-solid fa-palette"></i> Themes</button>
+      <button class="rb-tab" onclick="rbTab('installed')"><i class="fa-solid fa-check-circle"></i> Installed</button>
+      <button class="rb-tab" onclick="rbTab('submit')"><i class="fa-solid fa-upload"></i> Submit</button>
+    </div>
+    <button class="rb-close" onclick="closeRiverbank()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="rb-body">
+
+    <!-- Extensions -->
+    <div class="rb-section active" id="rb-extensions">
+      <div class="rb-section-title">Extensions</div>
+      <div class="rb-section-sub">Add functionality to your browser</div>
+      <div class="rb-grid" id="rb-ext-grid"><div style="color:var(--text-muted);font-size:12px;padding:20px 0">Loading...</div></div>
+    </div>
+
+    <!-- Themes -->
+    <div class="rb-section" id="rb-themes">
+      <div class="rb-section-title">Themes</div>
+      <div class="rb-section-sub">Customize how Bayou looks</div>
+      <div class="rb-grid" id="rb-theme-grid"><div style="color:var(--text-muted);font-size:12px;padding:20px 0">Loading...</div></div>
+    </div>
+
+    <!-- Installed -->
+    <div class="rb-section" id="rb-installed">
+      <div class="rb-section-title">Installed</div>
+      <div class="rb-section-sub">Manage your extensions and themes</div>
+      <div class="rb-grid" id="rb-installed-grid"><div style="color:var(--text-muted);font-size:12px;padding:20px 0">Nothing installed yet.</div></div>
+    </div>
+
+    <!-- Submit -->
+    <div class="rb-section" id="rb-submit">
+      <div class="rb-section-title">Submit to Riverbank</div>
+      <div class="rb-section-sub">Fill out this form to submit your extension or theme for review. It will be reviewed by the Bayou team before being listed.</div>
+      <div class="rb-form" style="margin-top:24px">
+        <div class="form-field"><label class="form-label">Name</label><input class="form-input" id="rb-sub-name" placeholder="My Awesome Extension"></div>
+        <div class="form-field"><label class="form-label">Type</label>
+          <select id="rb-sub-type" class="form-input" style="background:var(--surface2)">
+            <option value="extension">Extension</option>
+            <option value="theme">Theme</option>
+          </select>
+        </div>
+        <div class="form-field"><label class="form-label">Description</label><textarea id="rb-sub-desc" placeholder="What does it do?"></textarea></div>
+        <div class="form-field"><label class="form-label">Icon (emoji or FA class e.g. fa-moon)</label><input class="form-input" id="rb-sub-icon" placeholder="fa-moon"></div>
+        <div class="form-field"><label class="form-label">CSS to inject (for themes/dark mode/etc)</label><textarea id="rb-sub-css" placeholder="body { background: #000 !important; }" style="min-height:120px;font-size:11px"></textarea></div>
+        <div class="form-field"><label class="form-label">JavaScript to inject (for extensions)</label><textarea id="rb-sub-js" placeholder="// Your extension code here" style="min-height:120px;font-size:11px"></textarea></div>
+        <div class="form-field"><label class="form-label">URL match pattern (leave blank for all sites)</label><input class="form-input" id="rb-sub-match" placeholder="*.youtube.com or leave blank"></div>
+        <div class="form-field"><label class="form-label">Your name / handle</label><input class="form-input" id="rb-sub-author" placeholder="@yourhandle"></div>
+        <button class="rb-btn primary" onclick="submitRiverbankForm()" style="margin-top:6px"><i class="fa-solid fa-paper-plane"></i> Submit for Review</button>
+        <div id="rb-sub-msg" style="margin-top:12px;font-size:12px;display:none"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DEV FORMS (bayou://developer-forms) -->
+<div id="devforms-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:8500;flex-direction:column">
+  <div class="rb-hd">
+    <span class="rb-logo" style="color:var(--danger)">Developer Forms</span>
+    <div style="flex:1"></div>
+    <button class="rb-close" onclick="document.getElementById('devforms-screen').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="rb-body">
+    <div id="devforms-body"><div style="color:var(--text-muted);font-size:12px">Loading...</div></div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu">
+  <button class="ctx-item" id="ctx-newtab"><i class="fa-solid fa-plus"></i> Open in New Tab</button>
+  <button class="ctx-item" id="ctx-copy"><i class="fa-solid fa-copy"></i> Copy Link</button>
+  <div class="ctx-sep"></div>
+  <button class="ctx-item" id="ctx-save"><i class="fa-solid fa-download"></i> Save As</button>
+</div>
 </body>
 </html>
