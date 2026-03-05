@@ -625,14 +625,23 @@ function navigate(raw,tid=activeId,skipHist=false) {
 }
 
 function loadFrame(t,url,skipHist) {
-  const proxied=PROXY.replace(//$/,'')+'/.netlify/functions/proxy?url='+encodeURIComponent(url);
-  t.frame.innerHTML=`
-    <div class="frame-loading" id="fl-${t.id}"><div class="spinner"></div><div>Loading…</div></div>
-    <iframe class="pframe" id="if-${t.id}" src="${esc(proxied)}"
-      sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture"
-      onload="onLoad('${t.id}','${esc(url)}')" onerror="onErr('${t.id}')">
-    </iframe>`;
+  const proxied=PROXY.replace(/\/$/,'')+'/.netlify/functions/proxy?url='+encodeURIComponent(url);
+  const safeId=t.id;
+  const iframe=document.createElement('iframe');
+  iframe.className='pframe';
+  iframe.id='if-'+safeId;
+  iframe.src=proxied;
+  iframe.setAttribute('sandbox','allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation');
+  iframe.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture');
+  iframe.onload=()=>onLoad(safeId,url);
+  iframe.onerror=()=>onErr(safeId);
+  const loading=document.createElement('div');
+  loading.className='frame-loading';
+  loading.id='fl-'+safeId;
+  loading.innerHTML='<div class="spinner"></div><div>Loading…</div>';
+  t.frame.innerHTML='';
+  t.frame.appendChild(loading);
+  t.frame.appendChild(iframe);
   startP();
   if(!skipHist&&!t.incog&&currentUser) sb.from('bayou_history').insert({user_id:currentUser.id,url,title:url,visited_at:new Date().toISOString()}).then(()=>{});
 }
