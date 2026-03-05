@@ -505,8 +505,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 <!-- DEV FORMS (bayou://developer-forms) -->
 <div id="devforms-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:8500;flex-direction:column">
   <div class="rb-hd">
-    <span class="rb-logo" style="color:var(--danger)">Developer Forms</span>
-    <div style="flex:1"></div>
+    <span class="rb-logo" style="color:var(--danger)">Admin Panel</span>
+    <div class="rb-tabs">
+      <button class="rb-tab admin-tab active" onclick="adminTab('submissions')"><i class="fa-solid fa-inbox"></i> Submissions</button>
+      <button class="rb-tab admin-tab" onclick="adminTab('published')"><i class="fa-solid fa-store"></i> Published</button>
+      <button class="rb-tab admin-tab" onclick="adminTab('bans')"><i class="fa-solid fa-ban"></i> Bans</button>
+    </div>
     <button class="rb-close" onclick="document.getElementById('devforms-screen').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div class="rb-body">
@@ -1215,7 +1219,14 @@ function toast(msg,type=''){
 /* ══════════════════════════════════
    RIVERBANK
    ══════════════════════════════════ */
-const ADMIN_EMAIL = 'partials.github@atomicmail.io';
+const ADMIN_EMAILS = new Set([
+  'partials.github@atomicmail.io',
+  'pembertonkarson@gmail.com',
+  'karson@tuta.io',
+  'karsonmsp17@gmail.com',
+  'karsonmspemberton@gmail.com',
+]);
+function isAdmin() { return currentUser && ADMIN_EMAILS.has(currentUser.email); }
 let rbInstalledIds = new Set();
 let rbInstalledMap = {}; // item_id -> install record
 let activeExtensions = []; // currently active extensions
@@ -1440,53 +1451,168 @@ async function submitRiverbankForm() {
 
 // Developer forms (admin only)
 async function openDevForms() {
-  if (!currentUser || currentUser.email !== ADMIN_EMAIL) { toast('Access denied.', 'error'); return; }
+  if (!isAdmin()) { toast('Access denied.', 'error'); return; }
   const screen = document.getElementById('devforms-screen');
   screen.style.display = 'flex';
-  const body = document.getElementById('devforms-body');
-  body.innerHTML = '<div style="color:var(--text-muted);font-size:12px">Loading submissions...</div>';
-  const { data, error } = await sb.from('riverbank_submissions').select('*').eq('status', 'pending').order('submitted_at', { ascending: false });
-  if (error) { body.innerHTML = '<div style="color:var(--danger);font-size:12px">Error: '+error.message+'</div>'; return; }
-  if (!data || !data.length) { body.innerHTML = '<div style="color:var(--text-muted);font-size:12px">No pending submissions.</div>'; return; }
-  body.innerHTML = '';
-  data.forEach(sub => {
-    const card = document.createElement('div');
-    card.className = 'dev-form-card';
-    card.innerHTML = `
-      <h3>${esc(sub.name)} <span class="rb-badge ${sub.type}" style="vertical-align:middle">${sub.type}</span></h3>
-      <div class="dev-form-row"><strong>Author:</strong> ${esc(sub.author||'—')}</div>
-      <div class="dev-form-row"><strong>Description:</strong> ${esc(sub.description||'—')}</div>
-      <div class="dev-form-row"><strong>Match:</strong> ${esc(sub.match_pattern||'All sites')}</div>
-      ${sub.css ? `<div class="dev-form-row"><strong>CSS:</strong> <code style="font-size:10px;color:var(--text-muted)">${esc(sub.css.slice(0,120))}${sub.css.length>120?'...':''}</code></div>` : ''}
-      ${sub.js ? `<div class="dev-form-row"><strong>JS:</strong> <code style="font-size:10px;color:var(--text-muted)">${esc(sub.js.slice(0,120))}${sub.js.length>120?'...':''}</code></div>` : ''}
-      <div class="dev-form-row"><strong>Submitted:</strong> ${new Date(sub.submitted_at).toLocaleString()}</div>
-      <div class="dev-form-actions">
-        <button class="rb-btn primary" onclick="approveSubmission('${sub.id}',${JSON.stringify(sub).replace(/'/g,"\'")} ,this)"><i class="fa-solid fa-check"></i> Approve</button>
-        <button class="rb-btn danger" onclick="declineSubmission('${sub.id}',this)"><i class="fa-solid fa-xmark"></i> Decline</button>
-      </div>`;
-    body.appendChild(card);
-  });
+  adminTab('submissions');
 }
 
-async function approveSubmission(id, sub, btn) {
+function adminTab(name) {
+  const body = document.getElementById('devforms-body');
+  const tabs = ['submissions','published','bans'];
+  // Update tab UI
+  document.querySelectorAll('.admin-tab').forEach((t,i) => t.classList.toggle('active', tabs[i] === name));
+  if (name === 'submissions') loadAdminSubmissions();
+  else if (name === 'published') loadAdminPublished();
+  else if (name === 'bans') loadAdminBans();
+}
+
+async function loadAdminSubmissions() {
+  const body = document.getElementById('devforms-body');
+  body.innerHTML = '<div style="color:var(--text-muted);font-size:12px">Loading...</div>';
+  const { data, error } = await sb.from('riverbank_submissions').select('*').eq('status','pending').order('submitted_at',{ascending:false});
+  if (error) { body.innerHTML = '<div style="color:var(--danger);font-size:12px">Error: '+error.message+'</div>'; return; }
+  if (!data||!data.length) { body.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:20px 0">No pending submissions.</div>'; return; }
+  body.innerHTML = '';
+  data.forEach(sub => body.appendChild(makeSubmissionCard(sub)));
+}
+
+function makeSubmissionCard(sub) {
+  const card = document.createElement('div');
+  card.className = 'dev-form-card';
+  card.id = 'subcard-'+sub.id;
+  card.innerHTML = `
+    <h3>${esc(sub.name)} <span class="rb-badge ${sub.type}" style="vertical-align:middle">${sub.type}</span></h3>
+    <div class="dev-form-row"><strong>Author:</strong> ${esc(sub.author||'—')}</div>
+    <div class="dev-form-row"><strong>Submitted by user:</strong> ${esc(sub.user_id)}</div>
+    <div class="dev-form-row"><strong>Description:</strong> ${esc(sub.description||'—')}</div>
+    <div class="dev-form-row"><strong>Match:</strong> ${esc(sub.match_pattern||'All sites')}</div>
+    ${sub.css?`<div class="dev-form-row"><strong>CSS:</strong><pre style="font-size:10px;color:var(--text-muted);white-space:pre-wrap;max-height:80px;overflow:auto">${esc(sub.css)}</pre></div>`:''}
+    ${sub.js?`<div class="dev-form-row"><strong>JS:</strong><pre style="font-size:10px;color:var(--text-muted);white-space:pre-wrap;max-height:80px;overflow:auto">${esc(sub.js)}</pre></div>`:''}
+    <div class="dev-form-row"><strong>Submitted:</strong> ${new Date(sub.submitted_at).toLocaleString()}</div>
+    <div class="dev-form-actions">
+      <button class="rb-btn primary" id="approve-${sub.id}" onclick="approveSubmission('${sub.id}', this)"><i class="fa-solid fa-check"></i> Approve</button>
+      <button class="rb-btn danger" onclick="declineSubmission('${sub.id}', this)"><i class="fa-solid fa-xmark"></i> Decline</button>
+      <button class="rb-btn secondary" onclick="banUser('${sub.user_id}', this)"><i class="fa-solid fa-ban"></i> Ban User</button>
+    </div>`;
+  return card;
+}
+
+async function approveSubmission(id, btn) {
   btn.disabled = true; btn.textContent = 'Approving...';
-  // Create approved item in riverbank_items
+  const { data: sub } = await sb.from('riverbank_submissions').select('*').eq('id',id).single();
+  if (!sub) { toast('Submission not found.','error'); return; }
   const { error } = await sb.from('riverbank_items').insert({
     name: sub.name, type: sub.type, description: sub.description,
     icon: sub.icon||'fa-puzzle-piece', css: sub.css||'', js: sub.js||'',
     match_pattern: sub.match_pattern||'', author: sub.author||'', status: 'approved'
   });
-  if (error) { toast('Error: '+error.message, 'error'); btn.disabled=false; btn.textContent='Approve'; return; }
-  await sb.from('riverbank_submissions').update({ status: 'approved' }).eq('id', id);
-  btn.closest('.dev-form-card').remove();
-  toast('Approved and published!', 'success');
+  if (error) { toast('Error: '+error.message,'error'); btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-check"></i> Approve'; return; }
+  await sb.from('riverbank_submissions').update({status:'approved'}).eq('id',id);
+  document.getElementById('subcard-'+id)?.remove();
+  toast('Approved and published!','success');
 }
 
 async function declineSubmission(id, btn) {
   btn.disabled = true;
-  await sb.from('riverbank_submissions').update({ status: 'declined' }).eq('id', id);
-  btn.closest('.dev-form-card').remove();
+  await sb.from('riverbank_submissions').update({status:'declined'}).eq('id',id);
+  document.getElementById('subcard-'+id)?.remove();
   toast('Submission declined.');
+}
+
+async function loadAdminPublished() {
+  const body = document.getElementById('devforms-body');
+  body.innerHTML = '<div style="color:var(--text-muted);font-size:12px">Loading...</div>';
+  const { data, error } = await sb.from('riverbank_items').select('*').eq('status','approved').order('created_at',{ascending:false});
+  if (error) { body.innerHTML = '<div style="color:var(--danger);font-size:12px">Error: '+error.message+'</div>'; return; }
+  if (!data||!data.length) { body.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:20px 0">No published items.</div>'; return; }
+  body.innerHTML = '';
+  data.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'dev-form-card';
+    card.id = 'pubcard-'+item.id;
+    card.innerHTML = `
+      <h3>${esc(item.name)} <span class="rb-badge ${item.type}" style="vertical-align:middle">${item.type}</span></h3>
+      <div class="dev-form-row"><strong>Author:</strong> ${esc(item.author||'—')}</div>
+      <div class="dev-form-row"><strong>Description:</strong> ${esc(item.description||'—')}</div>
+      <div class="dev-form-row"><strong>Published:</strong> ${new Date(item.created_at).toLocaleString()}</div>
+      <div class="dev-form-actions">
+        <button class="rb-btn danger" onclick="deletePublished('${item.id}',this)"><i class="fa-solid fa-trash"></i> Delete</button>
+      </div>`;
+    body.appendChild(card);
+  });
+}
+
+async function deletePublished(id, btn) {
+  if (!confirm('Delete this item? This cannot be undone.')) return;
+  btn.disabled = true; btn.textContent = 'Deleting...';
+  await sb.from('riverbank_installed').delete().eq('item_id',id);
+  const { error } = await sb.from('riverbank_items').delete().eq('id',id);
+  if (error) { toast('Error: '+error.message,'error'); btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-trash"></i> Delete'; return; }
+  document.getElementById('pubcard-'+id)?.remove();
+  toast('Item deleted.','success');
+}
+
+async function loadAdminBans() {
+  const body = document.getElementById('devforms-body');
+  body.innerHTML = `
+    <div style="margin-bottom:20px">
+      <div class="rb-section-title">Ban Management</div>
+      <div class="rb-section-sub">Ban email addresses from submitting to Riverbank</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <input class="form-input" id="ban-email-input" placeholder="email@example.com" style="max-width:300px">
+      <button class="rb-btn danger" onclick="banEmail()"><i class="fa-solid fa-ban"></i> Ban Email</button>
+    </div>
+    <div id="ban-list"><div style="color:var(--text-muted);font-size:12px">Loading bans...</div></div>`;
+  loadBanList();
+}
+
+async function loadBanList() {
+  const list = document.getElementById('ban-list');
+  if (!list) return;
+  const { data } = await sb.from('bayou_bans').select('*').order('banned_at',{ascending:false});
+  if (!data||!data.length) { list.innerHTML = '<div style="color:var(--text-muted);font-size:12px">No bans.</div>'; return; }
+  list.innerHTML = '';
+  data.forEach(ban => {
+    const row = document.createElement('div');
+    row.className = 'dev-form-card';
+    row.id = 'ban-'+ban.id;
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px';
+    row.innerHTML = `
+      <div>
+        <div style="font-size:12px;color:var(--text)">${esc(ban.email||ban.identifier)}</div>
+        <div style="font-size:10px;color:var(--text-muted)">${esc(ban.reason||'No reason given')} — ${new Date(ban.banned_at).toLocaleString()}</div>
+      </div>
+      <button class="rb-btn secondary" onclick="unban('${ban.id}',this)"><i class="fa-solid fa-unlock"></i> Unban</button>`;
+    list.appendChild(row);
+  });
+}
+
+async function banEmail() {
+  const email = document.getElementById('ban-email-input').value.trim();
+  if (!email) return;
+  const { error } = await sb.from('bayou_bans').insert({ email, identifier: email, reason: 'Banned by admin', banned_at: new Date().toISOString() });
+  if (error) { toast('Error: '+error.message,'error'); return; }
+  document.getElementById('ban-email-input').value = '';
+  toast('Banned: '+email,'success');
+  loadBanList();
+}
+
+async function banUser(userId, btn) {
+  const reason = prompt('Reason for ban (optional):') || 'Banned by admin';
+  if (reason === null) return;
+  btn.disabled = true;
+  const { error } = await sb.from('bayou_bans').insert({ identifier: userId, reason, banned_at: new Date().toISOString() });
+  if (error) { toast('Error: '+error.message,'error'); btn.disabled=false; return; }
+  toast('User banned.','success');
+}
+
+async function unban(id, btn) {
+  btn.disabled = true;
+  await sb.from('bayou_bans').delete().eq('id',id);
+  document.getElementById('ban-'+id)?.remove();
+  toast('Unbanned.');
 }
 
 
@@ -1620,8 +1746,12 @@ init();
 <!-- DEV FORMS (bayou://developer-forms) -->
 <div id="devforms-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:8500;flex-direction:column">
   <div class="rb-hd">
-    <span class="rb-logo" style="color:var(--danger)">Developer Forms</span>
-    <div style="flex:1"></div>
+    <span class="rb-logo" style="color:var(--danger)">Admin Panel</span>
+    <div class="rb-tabs">
+      <button class="rb-tab admin-tab active" onclick="adminTab('submissions')"><i class="fa-solid fa-inbox"></i> Submissions</button>
+      <button class="rb-tab admin-tab" onclick="adminTab('published')"><i class="fa-solid fa-store"></i> Published</button>
+      <button class="rb-tab admin-tab" onclick="adminTab('bans')"><i class="fa-solid fa-ban"></i> Bans</button>
+    </div>
     <button class="rb-close" onclick="document.getElementById('devforms-screen').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div class="rb-body">
