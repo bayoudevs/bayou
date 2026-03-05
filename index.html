@@ -86,6 +86,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 .dev-form-row strong{color:var(--text)}
 .dev-form-actions{display:flex;gap:8px;margin-top:12px}
 
+
+/* EDIT MODAL */
+#edit-modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+#edit-modal.open{display:flex}
+.edit-modal-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:640px;max-width:calc(100vw - 32px);max-height:calc(100vh - 60px);overflow-y:auto;box-shadow:0 40px 100px rgba(0,0,0,0.9)}
+.edit-modal-title{font-family:var(--serif);font-size:20px;margin-bottom:20px}
+
 /* CONTEXT MENU */
 #ctx-menu{position:fixed;z-index:99999;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:5px;min-width:180px;box-shadow:0 12px 40px rgba(0,0,0,0.7);display:none;animation:ddIn 0.12s ease}
 #ctx-menu.on{display:block}
@@ -515,6 +522,26 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
   </div>
   <div class="rb-body">
     <div id="devforms-body"><div style="color:var(--text-muted);font-size:12px">Loading...</div></div>
+  </div>
+</div>
+
+
+<!-- EDIT MODAL -->
+<div id="edit-modal">
+  <div class="edit-modal-card">
+    <div class="edit-modal-title"><i class="fa-solid fa-pen"></i> Edit Extension / Theme</div>
+    <input type="hidden" id="edit-item-id">
+    <div class="form-field"><label class="form-label">Name</label><input class="form-input" id="edit-name"></div>
+    <div class="form-field"><label class="form-label">Description</label><textarea class="form-input" id="edit-desc" style="min-height:60px;resize:vertical"></textarea></div>
+    <div class="form-field"><label class="form-label">Icon (FA class e.g. fa-moon)</label><input class="form-input" id="edit-icon"></div>
+    <div class="form-field"><label class="form-label">CSS</label><textarea class="form-input" id="edit-css" style="min-height:140px;resize:vertical;font-size:11px"></textarea></div>
+    <div class="form-field"><label class="form-label">JavaScript</label><textarea class="form-input" id="edit-js" style="min-height:140px;resize:vertical;font-size:11px"></textarea></div>
+    <div class="form-field"><label class="form-label">URL Match Pattern</label><input class="form-input" id="edit-match" placeholder="*.youtube.com or leave blank"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="rb-btn primary" onclick="saveEditItem()"><i class="fa-solid fa-save"></i> Save</button>
+      <button class="rb-btn secondary" onclick="closeEditModal()">Cancel</button>
+    </div>
+    <div id="edit-msg" style="margin-top:10px;font-size:12px;display:none"></div>
   </div>
 </div>
 
@@ -1313,6 +1340,14 @@ function makeRbCard(item) {
     uninstBtn.onclick = () => uninstallItem(item, card);
     actions.appendChild(toggleBtn);
     actions.appendChild(uninstBtn);
+    if (isAdmin()) {
+      const editBtn = document.createElement('button');
+      editBtn.className = 'rb-btn secondary';
+      editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
+      editBtn.title = 'Edit';
+      editBtn.onclick = () => openEditModal(item);
+      actions.appendChild(editBtn);
+    }
   } else {
     const instBtn = document.createElement('button');
     instBtn.className = 'rb-btn primary';
@@ -1537,6 +1572,7 @@ async function loadAdminPublished() {
       <div class="dev-form-row"><strong>Description:</strong> ${esc(item.description||'—')}</div>
       <div class="dev-form-row"><strong>Published:</strong> ${new Date(item.created_at).toLocaleString()}</div>
       <div class="dev-form-actions">
+        <button class="rb-btn secondary" onclick="openEditModal(${JSON.stringify(item).replace(/`/g,'\`')})"><i class="fa-solid fa-pen"></i> Edit</button>
         <button class="rb-btn danger" onclick="deletePublished('${item.id}',this)"><i class="fa-solid fa-trash"></i> Delete</button>
       </div>`;
     body.appendChild(card);
@@ -1614,6 +1650,54 @@ async function unban(id, btn) {
   document.getElementById('ban-'+id)?.remove();
   toast('Unbanned.');
 }
+
+
+
+/* ══════════════════════════════════
+   EDIT ITEM
+   ══════════════════════════════════ */
+function openEditModal(item) {
+  document.getElementById('edit-item-id').value = item.id;
+  document.getElementById('edit-name').value = item.name || '';
+  document.getElementById('edit-desc').value = item.description || '';
+  document.getElementById('edit-icon').value = item.icon || '';
+  document.getElementById('edit-css').value = item.css || '';
+  document.getElementById('edit-js').value = item.js || '';
+  document.getElementById('edit-match').value = item.match_pattern || '';
+  document.getElementById('edit-msg').style.display = 'none';
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+}
+
+async function saveEditItem() {
+  const id = document.getElementById('edit-item-id').value;
+  const msg = document.getElementById('edit-msg');
+  const updates = {
+    name: document.getElementById('edit-name').value.trim(),
+    description: document.getElementById('edit-desc').value.trim(),
+    icon: document.getElementById('edit-icon').value.trim(),
+    css: document.getElementById('edit-css').value,
+    js: document.getElementById('edit-js').value,
+    match_pattern: document.getElementById('edit-match').value.trim(),
+  };
+  if (!updates.name) { msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent='Name is required.'; return; }
+  const { error } = await sb.from('riverbank_items').update(updates).eq('id', id);
+  if (error) { msg.style.display='block'; msg.style.color='var(--danger)'; msg.textContent='Error: '+error.message; return; }
+  closeEditModal();
+  toast('Saved!', 'success');
+  // Refresh published list if open
+  if (document.getElementById('devforms-screen').style.display === 'flex') loadAdminPublished();
+  // Refresh store if open
+  await loadAndApplyInstalled();
+}
+
+// Close edit modal on backdrop click
+document.getElementById('edit-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('edit-modal')) closeEditModal();
+});
 
 
 /* ══════════════════════════════════
@@ -1756,6 +1840,26 @@ init();
   </div>
   <div class="rb-body">
     <div id="devforms-body"><div style="color:var(--text-muted);font-size:12px">Loading...</div></div>
+  </div>
+</div>
+
+
+<!-- EDIT MODAL -->
+<div id="edit-modal">
+  <div class="edit-modal-card">
+    <div class="edit-modal-title"><i class="fa-solid fa-pen"></i> Edit Extension / Theme</div>
+    <input type="hidden" id="edit-item-id">
+    <div class="form-field"><label class="form-label">Name</label><input class="form-input" id="edit-name"></div>
+    <div class="form-field"><label class="form-label">Description</label><textarea class="form-input" id="edit-desc" style="min-height:60px;resize:vertical"></textarea></div>
+    <div class="form-field"><label class="form-label">Icon (FA class e.g. fa-moon)</label><input class="form-input" id="edit-icon"></div>
+    <div class="form-field"><label class="form-label">CSS</label><textarea class="form-input" id="edit-css" style="min-height:140px;resize:vertical;font-size:11px"></textarea></div>
+    <div class="form-field"><label class="form-label">JavaScript</label><textarea class="form-input" id="edit-js" style="min-height:140px;resize:vertical;font-size:11px"></textarea></div>
+    <div class="form-field"><label class="form-label">URL Match Pattern</label><input class="form-input" id="edit-match" placeholder="*.youtube.com or leave blank"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="rb-btn primary" onclick="saveEditItem()"><i class="fa-solid fa-save"></i> Save</button>
+      <button class="rb-btn secondary" onclick="closeEditModal()">Cancel</button>
+    </div>
+    <div id="edit-msg" style="margin-top:10px;font-size:12px;display:none"></div>
   </div>
 </div>
 
