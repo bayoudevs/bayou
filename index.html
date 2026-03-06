@@ -969,31 +969,15 @@ function onLoad(tid,url) {
   const t=tabs.find(x=>x.id===tid); if(!t)return;
   t.loading=false;
   setTimeout(injectIntoFrames, 200);
-  // Harvest any cookies the proxy captured for this page
-  harvestCookies(url);
   try{ const f=$('if-'+tid); const tt=f?.contentDocument?.title; t.title=tt||new URL(url).hostname; }
   catch(e){ try{t.title=new URL(url).hostname;}catch(e2){t.title=url;} }
   $('fl-'+tid)?.remove(); stopP(); renderTabs(); saveTab(tid); updBMBtn(url);
   if(!t.incog&&currentUser) sb.from('bayou_history').update({title:t.title}).eq('user_id',currentUser.id).eq('url',url).then(()=>{});
 }
 
-// Fetch proxy response headers to grab x-bayou-cookies and store them
-async function harvestCookies(url) {
-  if (!url || !url.startsWith('http')) return;
-  try {
-    const host = new URL(url).hostname;
-    const proxy = getProxy();
-    const storedCookies = cookieJar.getHeader(host);
-    const cookieParam = storedCookies ? '&cookies=' + encodeURIComponent(storedCookies) : '';
-    const proxied = proxy.url.replace(/\/$/, '') + '/.netlify/functions/proxy?url=' + encodeURIComponent(url) + cookieParam;
-    const res = await fetch(proxied, { method: 'GET' });
-    const cookieHeader = res.headers.get('x-bayou-cookies');
-    const cookieHost = res.headers.get('x-bayou-cookie-host') || host;
-    if (cookieHeader) {
-      cookieJar.ingest(cookieHost, cookieHeader);
-    }
-  } catch(e) {}
-}
+// Cookies are harvested via BAYOU_SET_COOKIES messages from the proxy interceptor
+// No need for a separate GET fetch — that missed POST responses anyway
+function harvestCookies(url) { /* handled via postMessage */ }
 
 function onErr(tid){const t=tabs.find(x=>x.id===tid);if(!t)return;t.loading=false;$('fl-'+tid)?.remove();stopP();renderTabs();}
 function goHome(){const t=tabs.find(x=>x.id===activeId);if(!t)return;t.url='';t.title='New Tab';t.loading=false;$('address-input').value='';renderNewTab(t);renderTabs();updBMBtn('');}
