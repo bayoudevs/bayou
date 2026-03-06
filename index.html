@@ -390,7 +390,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
     </button>
     <div class="addr-wrap">
       <div class="addr-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
-      <input type="text" id="address-input" placeholder="Search or enter address…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')navigate(this.value)" onfocus="this.select()">
+      <input type="text" id="address-input" placeholder="Search or enter address…" autocomplete="off" spellcheck="false"
+        onkeydown="if(event.key==='Enter')navigate(this.value)"
+        onfocus="addrFocus(this)"
+        onblur="addrBlur(this)">
     </div>
     <button class="ctool" id="fav-btn" onclick="toggleFavorite()"><i class="fa-solid fa-star"></i></button>
     <button class="ctool" id="rb-btn" onclick="navigate('bayou://riverbank')"><i class="fa-solid fa-store"></i></button>
@@ -825,7 +828,11 @@ function activate(id) {
   activeId=id;
   tabs.forEach(t=>t.frame.classList.toggle('active',t.id===id));
   const t=tabs.find(x=>x.id===id);
-  if(t){$('address-input').value=t.url||'';updBMBtn(t.url);}
+  if(t){
+    const inp = $('address-input');
+    inp.value = (document.activeElement === inp) ? (unproxyUrl(t.url)||'') : addrDisplayVal(t.url);
+    updBMBtn(t.url);
+  }
   renderTabs(); updIncogBar(); updNavBtns();
 }
 
@@ -858,14 +865,16 @@ async function saveTab(id) {
    ══════════════════════════════════ */
 function navigate(raw,tid=activeId,skipHist=false) {
   if(!raw||!raw.trim())return;
-  if(raw.trim().startsWith('bayou://')) { handleBayouUrl(raw.trim()); return; }
+  // Always unwrap proxy URLs before doing anything — prevents double-proxying
+  raw = unproxyUrl(raw.trim());
+  if(raw.startsWith('bayou://')) { handleBayouUrl(raw); return; }
   const t=tabs.find(x=>x.id===tid); if(!t)return;
   let url=raw.trim();
   const isUrl=/^https?:\/\//i.test(url)||/^[a-z0-9]+([\-.]?[a-z0-9]+)*\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(url);
   if(!isUrl) url=SEARCH+encodeURIComponent(url);
   else if(!/^https?:\/\//i.test(url)) url='https://'+url;
   t.url=url; t.title='Loading…'; t.loading=true;
-  $('address-input').value=url;
+  $('address-input').value=addrDisplayVal(url);
   if(!skipHist && url) {
     t.history = t.history.slice(0, t.histIdx+1);
     t.history.push(url);
@@ -1683,11 +1692,58 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')hideCtx();});
    - BAYOU_CONTEXTMENU: show context menu
    - BAYOU_CREDENTIALS: auto-save password prompt
    ══════════════════════════════════ */
+// Strip proxy prefix — handles double-wrapping recursively
+function unproxyUrl(url) {
+  if (!url) return url;
+  const REL = '/.netlify/functions/proxy?url=';
+  if (url.includes(REL)) {
+    try {
+      const idx = url.indexOf(REL);
+      const extracted = decodeURIComponent(url.slice(idx + REL.length));
+      return unproxyUrl(extracted); // recurse to handle double-wrapping
+    } catch(e) {}
+  }
+  return url;
+}
+
+// Address bar display helpers — show clean URL when not focused
+function addrDisplayVal(url) {
+  if (!url) return '';
+  url = unproxyUrl(url);
+  try {
+    const u = new URL(url);
+    return u.hostname + (u.pathname !== '/' ? u.pathname : '') + (u.search || '');
+  } catch(e) { return url; }
+}
+function addrFocus(el) {
+  const t = tabs.find(x => x.id === activeId);
+  if (t && t.url) el.value = unproxyUrl(t.url);
+  el.select();
+}
+function addrBlur(el) {
+  const t = tabs.find(x => x.id === activeId);
+  if (t && t.url) el.value = addrDisplayVal(t.url);
+}
+
+function unproxyUrl(url) {
+  if (!url) return url;
+  const PROXY_PREFIX = getProxy().url.replace(/\/$/, '') + '/.netlify/functions/proxy?url=';
+  if (url.startsWith(PROXY_PREFIX)) {
+    try { return decodeURIComponent(url.slice(PROXY_PREFIX.length)); } catch(e) {}
+  }
+  // Also handle relative proxy paths
+  const REL_PREFIX = '/.netlify/functions/proxy?url=';
+  if (url.startsWith(REL_PREFIX)) {
+    try { return decodeURIComponent(url.slice(REL_PREFIX.length)); } catch(e) {}
+  }
+  return url;
+}
+
 window.addEventListener('message', e => {
   if (!e.data || typeof e.data !== 'object') return;
 
   if (e.data.type === 'BAYOU_NAVIGATE' && e.data.url) {
-    navigate(e.data.url);
+    navigate(unproxyUrl(e.data.url));
   }
 
   if (e.data.type === 'BAYOU_CONTEXTMENU') {
