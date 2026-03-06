@@ -900,25 +900,9 @@ function updProxyBadge() {
 }
 
 const NO_PROXY_PATTERNS = [
-  /accounts\.google\.com/,
-  /github\.com\/login/,
-  /github\.com\/oauth/,
-  /accounts\.github\.com/,
-  /discord\.com\/oauth/,
-  /twitter\.com\/i\/oauth/,
-  /x\.com\/i\/oauth/,
-  /appleid\.apple\.com/,
+  // Only skip the proxy for Bayou's own Supabase auth callbacks
+  // Everything else — including social sites — goes through the proxy to bypass blocks
   /supabase\.co\/auth/,
-  /instagram\.com/,
-  /facebook\.com/,
-  /twitter\.com/,
-  /x\.com/,
-  /tiktok\.com/,
-  /reddit\.com\/login/,
-  /accounts\.spotify\.com/,
-  /login\.microsoftonline\.com/,
-  /linkedin\.com\/login/,
-  /linkedin\.com\/oauth/,
 ];
 
 function shouldProxy(url) {
