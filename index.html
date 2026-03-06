@@ -921,9 +921,17 @@ function shouldProxy(url) {
 function loadFrame(t,url,skipHist) {
   const proxy = getProxy();
   const directLoad = !shouldProxy(url);
+  // Inject stored cookies for this hostname into the proxy request
+  let cookieParam = '';
+  try {
+    const host = new URL(url).hostname;
+    const storedCookies = cookieJar.getHeader(host);
+    if (storedCookies) cookieParam = '&cookies=' + encodeURIComponent(storedCookies);
+  } catch(e) {}
+
   const proxied = directLoad
     ? url
-    : proxy.url.replace(/\/$/,'')+'/.netlify/functions/proxy?url='+encodeURIComponent(url);
+    : proxy.url.replace(/\/$/,'')+'/.netlify/functions/proxy?url='+encodeURIComponent(url)+cookieParam;
   const safeId=t.id;
   const iframe=document.createElement('iframe');
   iframe.className='pframe';
@@ -961,10 +969,30 @@ function onLoad(tid,url) {
   const t=tabs.find(x=>x.id===tid); if(!t)return;
   t.loading=false;
   setTimeout(injectIntoFrames, 200);
+  // Harvest any cookies the proxy captured for this page
+  harvestCookies(url);
   try{ const f=$('if-'+tid); const tt=f?.contentDocument?.title; t.title=tt||new URL(url).hostname; }
   catch(e){ try{t.title=new URL(url).hostname;}catch(e2){t.title=url;} }
   $('fl-'+tid)?.remove(); stopP(); renderTabs(); saveTab(tid); updBMBtn(url);
   if(!t.incog&&currentUser) sb.from('bayou_history').update({title:t.title}).eq('user_id',currentUser.id).eq('url',url).then(()=>{});
+}
+
+// Fetch proxy response headers to grab x-bayou-cookies and store them
+async function harvestCookies(url) {
+  if (!url || !url.startsWith('http')) return;
+  try {
+    const host = new URL(url).hostname;
+    const proxy = getProxy();
+    const storedCookies = cookieJar.getHeader(host);
+    const cookieParam = storedCookies ? '&cookies=' + encodeURIComponent(storedCookies) : '';
+    const proxied = proxy.url.replace(/\/$/, '') + '/.netlify/functions/proxy?url=' + encodeURIComponent(url) + cookieParam;
+    const res = await fetch(proxied, { method: 'GET' });
+    const cookieHeader = res.headers.get('x-bayou-cookies');
+    const cookieHost = res.headers.get('x-bayou-cookie-host') || host;
+    if (cookieHeader) {
+      cookieJar.ingest(cookieHost, cookieHeader);
+    }
+  } catch(e) {}
 }
 
 function onErr(tid){const t=tabs.find(x=>x.id===tid);if(!t)return;t.loading=false;$('fl-'+tid)?.remove();stopP();renderTabs();}
@@ -1294,6 +1322,41 @@ document.addEventListener('keydown',e=>{
    UTILS
    ══════════════════════════════════ */
 function $(id){return document.getElementById(id);}
+
+/* ══════════════════════════════════
+   JS COOKIE JAR
+   Stores cookies per hostname in localStorage
+   since the proxy can't set real cookies cross-domain
+   ══════════════════════════════════ */
+const cookieJar = {
+  _key(host) { return 'bayou_cookies_' + host.replace(/[^a-z0-9]/gi,'_'); },
+  get(host) {
+    try { return JSON.parse(localStorage.getItem(this._key(host)) || '{}'); } catch(e) { return {}; }
+  },
+  set(host, name, value) {
+    const jar = this.get(host);
+    jar[name] = value;
+    try { localStorage.setItem(this._key(host), JSON.stringify(jar)); } catch(e) {}
+  },
+  getHeader(host) {
+    const jar = this.get(host);
+    return Object.entries(jar).map(([k,v]) => k+'='+v).join('; ');
+  },
+  ingest(host, cookieHeader) {
+    // cookieHeader is "name=value; name2=value2" from x-bayou-cookies
+    if (!cookieHeader) return;
+    cookieHeader.split(';').forEach(pair => {
+      const eq = pair.indexOf('=');
+      if (eq < 0) return;
+      const name = pair.slice(0, eq).trim();
+      const value = pair.slice(eq + 1).trim();
+      if (name) this.set(host, name, value);
+    });
+  },
+  clear(host) {
+    try { localStorage.removeItem(this._key(host)); } catch(e) {}
+  }
+};
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function shortUrl(url){try{const u=new URL(url);return u.hostname+(u.pathname.length>1?u.pathname.slice(0,28):'');}catch(e){return url;}}
 function isToday(d){const n=new Date();return d.toDateString()===n.toDateString();}
@@ -1744,6 +1807,11 @@ window.addEventListener('message', e => {
 
   if (e.data.type === 'BAYOU_NAVIGATE' && e.data.url) {
     navigate(unproxyUrl(e.data.url));
+  }
+
+  // Iframe is telling us it got cookies — store them
+  if (e.data.type === 'BAYOU_SET_COOKIES' && e.data.host && e.data.cookies) {
+    cookieJar.ingest(e.data.host, e.data.cookies);
   }
 
   if (e.data.type === 'BAYOU_CONTEXTMENU') {
