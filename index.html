@@ -294,6 +294,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
 .toast.success{border-color:rgba(163,196,106,0.3);color:var(--accent)}
 .toast.error{border-color:rgba(224,112,112,0.3);color:var(--danger)}
 
+/* SAFESEARCH */
+#ss-toggle{position:fixed;bottom:16px;right:16px;display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;z-index:400;font-size:11px;color:var(--text-muted);cursor:pointer;transition:all 0.15s;user-select:none;box-shadow:0 4px 16px rgba(0,0,0,0.4)}
+#ss-toggle:hover{border-color:var(--border-strong);color:var(--text)}
+#ss-toggle .ss-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background 0.2s;flex-shrink:0}
+#ss-toggle.on .ss-dot{background:var(--accent);box-shadow:0 0 6px rgba(163,196,106,0.5)}
+#ss-toggle.on{border-color:rgba(163,196,106,0.3);color:var(--accent)}
+
 /* PROGRESS */
 #pbar{position:fixed;top:0;left:0;height:2px;background:var(--accent);z-index:9999;transition:width 0.3s ease,opacity 0.5s;width:0%;opacity:0;pointer-events:none}
 #pbar.on{opacity:1}
@@ -395,7 +402,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
         onfocus="addrFocus(this)"
         onblur="addrBlur(this)">
     </div>
-    <button class="ctool" id="fav-btn" onclick="toggleFavorite()"><i class="fa-solid fa-star"></i></button>
     <button class="ctool" id="rb-btn" onclick="navigate('bayou://riverbank')"><i class="fa-solid fa-store"></i></button>
     <button class="ctool" id="bm-btn" onclick="toggleBookmark()"><i class="fa-solid fa-bookmark"></i></button>
     <button class="ctool" onclick="openPanel('favorites')"><i class="fa-solid fa-star"></i></button>
@@ -416,6 +422,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
   <div id="content-area"><div id="frames"></div></div>
 </div>
 
+<!-- SAFESEARCH TOGGLE -->
+<div id="ss-toggle" onclick="toggleSafeSearch()" title="Toggle SafeSearch">
+  <div class="ss-dot"></div>
+  <span id="ss-label">SafeSearch: Off</span>
+</div>
+
 <!-- PANELS -->
 <div id="panel-bd" onclick="closePanel()"></div>
 <div class="panel" id="panel-history">
@@ -431,7 +443,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
   <div class="panel-body" id="pb-body"></div>
 </div>
 
-<!-- PASSWORDS PANEL — rebuilt -->
+<!-- PASSWORDS PANEL -->
 <div class="panel" id="panel-passwords">
   <div class="panel-hd">
     <span class="panel-ttl">Passwords</span>
@@ -443,7 +455,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
     </div>
   </div>
   <div class="panel-body" id="pp-body">
-    <!-- Manual add form (hidden by default) -->
     <div class="pw-manual-form" id="pw-manual-form">
       <label class="mf-label">Website / App</label>
       <input class="mf-input" id="pw-m-site" placeholder="instagram.com" autocomplete="off">
@@ -456,7 +467,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--m
         <button class="pws-btn cancel" onclick="toggleManualAdd()">Cancel</button>
       </div>
     </div>
-    <!-- Entries injected here by loadPwPanel() -->
     <div id="pw-entries-list"></div>
   </div>
 </div>
@@ -588,7 +598,6 @@ const PROXIES = [
 ];
 let activeProxyIdx = 0;
 function getProxy() { return PROXIES[activeProxyIdx]; }
-const SEARCH = 'https://www.google.com/search?q=';
 
 const SETUP_SQL = `-- Bayou — run in Supabase SQL Editor then refresh
 
@@ -865,13 +874,12 @@ async function saveTab(id) {
    ══════════════════════════════════ */
 function navigate(raw,tid=activeId,skipHist=false) {
   if(!raw||!raw.trim())return;
-  // Always unwrap proxy URLs before doing anything — prevents double-proxying
   raw = unproxyUrl(raw.trim());
   if(raw.startsWith('bayou://')) { handleBayouUrl(raw); return; }
   const t=tabs.find(x=>x.id===tid); if(!t)return;
   let url=raw.trim();
   const isUrl=/^https?:\/\//i.test(url)||/^[a-z0-9]+([\-.]?[a-z0-9]+)*\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(url);
-  if(!isUrl) url=SEARCH+encodeURIComponent(url);
+  if(!isUrl) url=buildSearchUrl(url);
   else if(!/^https?:\/\//i.test(url)) url='https://'+url;
   t.url=url; t.title='Loading…'; t.loading=true;
   $('address-input').value=addrDisplayVal(url);
@@ -909,8 +917,6 @@ function updProxyBadge() {
 }
 
 const NO_PROXY_PATTERNS = [
-  // Only skip the proxy for Bayou's own Supabase auth callbacks
-  // Everything else — including social sites — goes through the proxy to bypass blocks
   /supabase\.co\/auth/,
 ];
 
@@ -921,7 +927,6 @@ function shouldProxy(url) {
 function loadFrame(t,url,skipHist) {
   const proxy = getProxy();
   const directLoad = !shouldProxy(url);
-  // Inject stored cookies for this hostname into the proxy request
   let cookieParam = '';
   try {
     const host = new URL(url).hostname;
@@ -974,10 +979,6 @@ function onLoad(tid,url) {
   $('fl-'+tid)?.remove(); stopP(); renderTabs(); saveTab(tid); updBMBtn(url);
   if(!t.incog&&currentUser) sb.from('bayou_history').update({title:t.title}).eq('user_id',currentUser.id).eq('url',url).then(()=>{});
 }
-
-// Cookies are harvested via BAYOU_SET_COOKIES messages from the proxy interceptor
-// No need for a separate GET fetch — that missed POST responses anyway
-function harvestCookies(url) { /* handled via postMessage */ }
 
 function onErr(tid){const t=tabs.find(x=>x.id===tid);if(!t)return;t.loading=false;$('fl-'+tid)?.remove();stopP();renderTabs();}
 function goHome(){const t=tabs.find(x=>x.id===activeId);if(!t)return;t.url='';t.title='New Tab';t.loading=false;$('address-input').value='';renderNewTab(t);renderTabs();updBMBtn('');}
@@ -1037,6 +1038,20 @@ async function toggleBookmark(){
   updBMBtn(t.url);
 }
 
+async function loadFavsPanel(){
+  const body=$('pf-body'); body.innerHTML='<div class="pempty">Loading\u2026</div>';
+  const{data}=await sb.from('bayou_bookmarks').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  if(!data||!data.length){body.innerHTML='<div class="pempty">No favorites yet.<br>Click \u2605 while browsing to save a page.</div>';return;}
+  body.innerHTML='';
+  data.forEach(b=>{
+    const el=document.createElement('div'); el.className='pitem';
+    el.innerHTML=`<div class="pitem-icon"><i class="fa-solid fa-star" style="color:var(--accent)"></i></div><div class="pitem-info"><div class="pitem-title">${esc(b.title||b.url)}</div><div class="pitem-sub">${esc(shortUrl(b.url))}</div></div><button class="pitem-del">\xd7</button>`;
+    el.querySelector('.pitem-del').onclick=e=>{e.stopPropagation();delBM(b.id,b.url,el);};
+    el.onclick=()=>{navigate(b.url);closePanel();};
+    body.appendChild(el);
+  });
+}
+
 async function loadBMPanel(){
   const body=$('pb-body'); body.innerHTML='<div class="pempty">Loading…</div>';
   const{data}=await sb.from('bayou_bookmarks').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
@@ -1081,10 +1096,8 @@ async function loadHistPanel(){
 async function delHist(id,el){await sb.from('bayou_history').delete().eq('id',id).eq('user_id',currentUser.id);el?.remove();}
 
 /* ══════════════════════════════════
-   PASSWORD MANAGER — FULL REBUILD
+   PASSWORD MANAGER
    ══════════════════════════════════ */
-
-// Toggle the manual-add form open/closed
 function toggleManualAdd() {
   const form = $('pw-manual-form');
   const isOpen = form.classList.contains('open');
@@ -1093,7 +1106,6 @@ function toggleManualAdd() {
     $('pw-m-site').value = '';
     $('pw-m-user').value = '';
     $('pw-m-pass').value = '';
-    // Pre-fill site from active tab
     const t = tabs.find(x => x.id === activeId);
     if (t && t.url) {
       try { $('pw-m-site').value = new URL(t.url).hostname; } catch(e) {}
@@ -1102,7 +1114,6 @@ function toggleManualAdd() {
   }
 }
 
-// Save manually entered password
 async function saveManualPw() {
   const site = $('pw-m-site').value.trim();
   const username = $('pw-m-user').value.trim();
@@ -1112,10 +1123,9 @@ async function saveManualPw() {
   await sb.from('bayou_passwords').insert({ user_id: currentUser.id, site, username, password });
   toast('Password saved!', 'success');
   toggleManualAdd();
-  loadPwPanel(); // refresh the list
+  loadPwPanel();
 }
 
-// Load and render all passwords
 async function loadPwPanel() {
   const list = $('pw-entries-list');
   list.innerHTML = '<div class="pempty">Loading…</div>';
@@ -1128,12 +1138,10 @@ async function loadPwPanel() {
   data.forEach(p => list.appendChild(makePwEntry(p)));
 }
 
-// Build a single password entry element
 function makePwEntry(p) {
   const entry = document.createElement('div');
   entry.className = 'pw-entry';
   entry.id = 'pwe-' + p.id;
-
   entry.innerHTML = `
     <div class="pw-entry-row">
       <div class="pw-entry-icon"><i class="fa-solid fa-key"></i></div>
@@ -1155,7 +1163,7 @@ function makePwEntry(p) {
     </div>
     <div class="pw-pw-row" id="pwval-${p.id}">
       <span class="pw-pw-val" id="pwtext-${p.id}">${esc(p.password)}</span>
-      <button class="pw-copy-btn" onclick="copyPw('${p.id}','${esc(p.password).replace(/'/g,'\\&#39;')}')">
+      <button class="pw-copy-btn" onclick="copyPw('${p.id}','${esc(p.password).replace(/'/g,"\\&#39;")}')">
         <i class="fa-solid fa-copy"></i> Copy
       </button>
     </div>
@@ -1171,52 +1179,40 @@ function makePwEntry(p) {
         <button class="pws-btn cancel" onclick="togglePwEdit('${p.id}')">Cancel</button>
       </div>
     </div>`;
-
   return entry;
 }
 
-function togglePwVisible(id) {
-  const row = $('pwval-' + id);
-  row.classList.toggle('visible');
-}
+function togglePwVisible(id) { $('pwval-'+id).classList.toggle('visible'); }
 
 function copyPw(id, pw) {
-  // pw comes as escaped HTML, unescape it
   const txt = document.createElement('textarea');
   txt.innerHTML = pw;
   navigator.clipboard.writeText(txt.value).then(() => toast('Password copied!', 'success'));
 }
 
 function togglePwEdit(id) {
-  const form = $('pwedit-' + id);
+  const form = $('pwedit-'+id);
   form.classList.toggle('open');
-  if (form.classList.contains('open')) {
-    $('ef-site-' + id)?.focus();
-  }
+  if (form.classList.contains('open')) $('ef-site-'+id)?.focus();
 }
 
 async function savePwEdit(id) {
-  const site = $('ef-site-' + id).value.trim();
-  const username = $('ef-user-' + id).value.trim();
-  const password = $('ef-pass-' + id).value;
+  const site = $('ef-site-'+id).value.trim();
+  const username = $('ef-user-'+id).value.trim();
+  const password = $('ef-pass-'+id).value;
   if (!site || !password) { toast('Site and password required.', 'error'); return; }
   const { error } = await sb.from('bayou_passwords').update({ site, username, password }).eq('id', id).eq('user_id', currentUser.id);
   if (error) { toast('Save failed: ' + error.message, 'error'); return; }
   toast('Password updated!', 'success');
-  // Refresh just this entry
   const { data } = await sb.from('bayou_passwords').select('*').eq('id', id).single();
-  if (data) {
-    const old = $('pwe-' + id);
-    if (old) old.replaceWith(makePwEntry(data));
-  }
+  if (data) { const old = $('pwe-'+id); if (old) old.replaceWith(makePwEntry(data)); }
 }
 
 async function deletePwEntry(id) {
   const { error } = await sb.from('bayou_passwords').delete().eq('id', id).eq('user_id', currentUser.id);
   if (error) { toast('Delete failed.', 'error'); return; }
-  $('pwe-' + id)?.remove();
+  $('pwe-'+id)?.remove();
   toast('Password deleted.');
-  // Show empty state if nothing left
   if (!$('pw-entries-list').querySelector('.pw-entry')) {
     $('pw-entries-list').innerHTML = '<div class="pempty">No saved passwords.<br>Use the + Add button or browse a site with a login form.</div>';
   }
@@ -1229,7 +1225,6 @@ let spwTimer = null;
 
 function promptSavePW(site, username, password) {
   if (!currentUser) return;
-  // Don't prompt for incognito tabs
   const t = tabs.find(x => x.id === activeId);
   if (t?.incog) return;
   pendingSPW = { site, username, password };
@@ -1244,10 +1239,8 @@ function promptSavePW(site, username, password) {
 async function doSavePW() {
   if (!pendingSPW || !currentUser) return;
   const { site, username, password } = pendingSPW;
-  // Check if we already have this exact entry — don't create duplicates
   const { data: existing } = await sb.from('bayou_passwords').select('id').eq('user_id', currentUser.id).eq('site', site).eq('username', username);
   if (existing && existing.length > 0) {
-    // Update existing instead of inserting
     await sb.from('bayou_passwords').update({ password }).eq('id', existing[0].id);
     toast('Password updated!', 'success');
   } else {
@@ -1269,17 +1262,17 @@ function dismissSPW() {
 let activePanel = null;
 function openPanel(name) {
   closePanel(); activePanel = name;
-  $('panel-' + name)?.classList.add('open');
+  $('panel-'+name)?.classList.add('open');
   $('panel-bd').classList.add('on');
   if (name === 'history') loadHistPanel();
+  else if (name === 'favorites') loadFavsPanel();
   else if (name === 'bookmarks') loadBMPanel();
   else if (name === 'passwords') loadPwPanel();
 }
 function closePanel() {
-  if (activePanel) $('panel-' + activePanel)?.classList.remove('open');
+  if (activePanel) $('panel-'+activePanel)?.classList.remove('open');
   activePanel = null;
   $('panel-bd').classList.remove('on');
-  // Close manual add form when panel closes
   $('pw-manual-form')?.classList.remove('open');
 }
 
@@ -1308,9 +1301,7 @@ document.addEventListener('keydown',e=>{
 function $(id){return document.getElementById(id);}
 
 /* ══════════════════════════════════
-   JS COOKIE JAR
-   Stores cookies per hostname in localStorage
-   since the proxy can't set real cookies cross-domain
+   COOKIE JAR
    ══════════════════════════════════ */
 const cookieJar = {
   _key(host) { return 'bayou_cookies_' + host.replace(/[^a-z0-9]/gi,'_'); },
@@ -1327,7 +1318,6 @@ const cookieJar = {
     return Object.entries(jar).map(([k,v]) => k+'='+v).join('; ');
   },
   ingest(host, cookieHeader) {
-    // cookieHeader is "name=value; name2=value2" from x-bayou-cookies
     if (!cookieHeader) return;
     cookieHeader.split(';').forEach(pair => {
       const eq = pair.indexOf('=');
@@ -1341,6 +1331,7 @@ const cookieJar = {
     try { localStorage.removeItem(this._key(host)); } catch(e) {}
   }
 };
+
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function shortUrl(url){try{const u=new URL(url);return u.hostname+(u.pathname.length>1?u.pathname.slice(0,28):'');}catch(e){return url;}}
 function isToday(d){const n=new Date();return d.toDateString()===n.toDateString();}
@@ -1350,6 +1341,33 @@ let toastTimer=null;
 function toast(msg,type=''){
   const el=$('toast-el');el.textContent=msg;el.className='toast'+(type?' '+type:'')+' on';
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('on'),2800);
+}
+
+/* ══════════════════════════════════
+   SAFESEARCH
+   ══════════════════════════════════ */
+let safeSearchOn = localStorage.getItem('bayou_safesearch') === '1';
+
+function applySafeSearch() {
+  const el = document.getElementById('ss-toggle');
+  const lbl = document.getElementById('ss-label');
+  if (!el || !lbl) return;
+  if (safeSearchOn) { el.classList.add('on'); lbl.textContent = 'SafeSearch: On'; }
+  else { el.classList.remove('on'); lbl.textContent = 'SafeSearch: Off'; }
+}
+
+function toggleSafeSearch() {
+  safeSearchOn = !safeSearchOn;
+  localStorage.setItem('bayou_safesearch', safeSearchOn ? '1' : '0');
+  applySafeSearch();
+  toast('SafeSearch ' + (safeSearchOn ? 'enabled.' : 'disabled.'), safeSearchOn ? 'success' : '');
+}
+
+function buildSearchUrl(query) {
+  const q = encodeURIComponent(query);
+  return safeSearchOn
+    ? 'https://www.google.com/search?safe=active&q=' + q
+    : 'https://www.google.com/search?q=' + q;
 }
 
 /* ══════════════════════════════════
@@ -1733,27 +1751,26 @@ document.addEventListener('click',e=>{if(!e.target.closest('#ctx-menu'))hideCtx(
 document.addEventListener('keydown',e=>{if(e.key==='Escape')hideCtx();});
 
 /* ══════════════════════════════════
-   MESSAGE LISTENER
-   Handles messages from iframes:
-   - BAYOU_NAVIGATE: navigate to URL
-   - BAYOU_CONTEXTMENU: show context menu
-   - BAYOU_CREDENTIALS: auto-save password prompt
+   URL HELPERS
    ══════════════════════════════════ */
-// Strip proxy prefix — handles double-wrapping recursively
+// Unwrap proxy URL — handles double-wrapping recursively
 function unproxyUrl(url) {
   if (!url) return url;
-  const REL = '/.netlify/functions/proxy?url=';
-  if (url.includes(REL)) {
-    try {
-      const idx = url.indexOf(REL);
-      const extracted = decodeURIComponent(url.slice(idx + REL.length));
-      return unproxyUrl(extracted); // recurse to handle double-wrapping
-    } catch(e) {}
+  const PROXY_PREFIX = getProxy().url.replace(/\/$/, '') + '/.netlify/functions/proxy?url=';
+  const REL_PREFIX = '/.netlify/functions/proxy?url=';
+  let out = url, safety = 0;
+  while (safety++ < 5) {
+    if (out.startsWith(PROXY_PREFIX)) {
+      try { out = decodeURIComponent(out.slice(PROXY_PREFIX.length)); continue; } catch(e) {}
+    }
+    if (out.includes(REL_PREFIX)) {
+      try { const idx = out.indexOf(REL_PREFIX); out = decodeURIComponent(out.slice(idx + REL_PREFIX.length)); continue; } catch(e) {}
+    }
+    break;
   }
-  return url;
+  return out;
 }
 
-// Address bar display helpers — show clean URL when not focused
 function addrDisplayVal(url) {
   if (!url) return '';
   url = unproxyUrl(url);
@@ -1762,30 +1779,22 @@ function addrDisplayVal(url) {
     return u.hostname + (u.pathname !== '/' ? u.pathname : '') + (u.search || '');
   } catch(e) { return url; }
 }
+
 function addrFocus(el) {
   const t = tabs.find(x => x.id === activeId);
   if (t && t.url) el.value = unproxyUrl(t.url);
   el.select();
 }
+
 function addrBlur(el) {
   const t = tabs.find(x => x.id === activeId);
   if (t && t.url) el.value = addrDisplayVal(t.url);
+  else if (!el.value) el.value = '';
 }
 
-function unproxyUrl(url) {
-  if (!url) return url;
-  const PROXY_PREFIX = getProxy().url.replace(/\/$/, '') + '/.netlify/functions/proxy?url=';
-  if (url.startsWith(PROXY_PREFIX)) {
-    try { return decodeURIComponent(url.slice(PROXY_PREFIX.length)); } catch(e) {}
-  }
-  // Also handle relative proxy paths
-  const REL_PREFIX = '/.netlify/functions/proxy?url=';
-  if (url.startsWith(REL_PREFIX)) {
-    try { return decodeURIComponent(url.slice(REL_PREFIX.length)); } catch(e) {}
-  }
-  return url;
-}
-
+/* ══════════════════════════════════
+   MESSAGE LISTENER
+   ══════════════════════════════════ */
 window.addEventListener('message', e => {
   if (!e.data || typeof e.data !== 'object') return;
 
@@ -1793,7 +1802,6 @@ window.addEventListener('message', e => {
     navigate(unproxyUrl(e.data.url));
   }
 
-  // Iframe is telling us it got cookies — store them
   if (e.data.type === 'BAYOU_SET_COOKIES' && e.data.host && e.data.cookies) {
     cookieJar.ingest(e.data.host, e.data.cookies);
   }
@@ -1802,20 +1810,15 @@ window.addEventListener('message', e => {
     showCtx(e.data.x, e.data.y, e.data.url);
   }
 
-  // ★ NEW: credential capture from iframe interceptor
   if (e.data.type === 'BAYOU_CREDENTIALS' && e.data.site && e.data.password) {
-    // Don't prompt for incognito
     const t = tabs.find(x => x.id === activeId);
     if (t?.incog) return;
     promptSavePW(e.data.site, e.data.username || '', e.data.password);
   }
 });
 
-function toggleFavorite() { toggleBookmark(); }
-
-document.addEventListener('DOMContentLoaded', wireCtxMenu);
+document.addEventListener('DOMContentLoaded', () => { wireCtxMenu(); applySafeSearch(); });
 init();
 </script>
 </body>
 </html>
-
