@@ -1,0 +1,12 @@
+{
+  "name": "bayou-proxy-server",
+  "version": "1.0.0",
+  "description": "Stateful proxy server for Bayou browser",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
